@@ -1,4 +1,4 @@
-const CACHE_NAME = 'city-life-v1';
+const CACHE_NAME = 'city-life-v2';
 const ASSETS = ['./', './index.html', './style.css', './game.js', './manifest.json'];
 
 self.addEventListener('install', (event) => {
@@ -17,8 +17,16 @@ self.addEventListener('activate', (event) => {
     self.clients.claim();
 });
 
+// Network-first: always serve the freshest version when online, so updates
+// show up immediately for returning visitors. Falls back to cache only when offline.
 self.addEventListener('fetch', (event) => {
     event.respondWith(
-        caches.match(event.request).then((cached) => cached || fetch(event.request))
+        fetch(event.request)
+            .then((response) => {
+                const copy = response.clone();
+                caches.open(CACHE_NAME).then((cache) => cache.put(event.request, copy));
+                return response;
+            })
+            .catch(() => caches.match(event.request))
     );
 });
