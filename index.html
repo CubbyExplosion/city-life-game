@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+    <title>City Life</title>
+    <link rel="stylesheet" href="style.css?v=2">
+    <link rel="manifest" href="manifest.json">
+    <link rel="icon" href="icon-192.png">
+    <link rel="apple-touch-icon" href="icon-512.png">
+    <meta name="theme-color" content="#16213e">
+</head>
+<body>
+
+    <!-- START SCREEN -->
+    <div id="start-screen">
+        <h1>City Life</h1>
+        <p>Live from age 1 to 85 in a modern city</p>
+        <h2>Who are you?</h2>
+        <div class="gender-buttons">
+            <button class="gender-btn" onclick="startGame('boy')">👦 Boy</button>
+            <button class="gender-btn" onclick="startGame('girl')">👧 Girl</button>
+        </div>
+        <button id="continue-btn" class="continue-btn" onclick="continueGame()" style="display:none">
+            ▶ Continue Saved Game
+        </button>
+        <button class="howto-btn" onclick="showHowToPlay()">📖 How to Play</button>
+    </div>
+
+    <!-- HOW TO PLAY GUIDE -->
+    <div id="howto-overlay" class="hidden">
+        <div id="howto-box">
+            <h2>📖 How to Play City Life</h2>
+            <div id="howto-content">
+
+                <h3>🎯 The Goal</h3>
+                <p>Live an entire life — from a baby all the way to age 85! Keep your four stats healthy:
+                💰 Money, 😊 Happiness, ❤️ Health, and 📚 Education. Reach age 85, or let your Health hit 0,
+                and you start a brand new life.</p>
+
+                <h3>🕹️ Controls</h3>
+                <p>Arrow keys or <strong>WASD</strong> to walk. Click on people in the 3D world to interact with them.</p>
+
+                <h3>👶 Baby Years (Age 1-4)</h3>
+                <p>You're stuck in your crib! Use <strong>Cry for Milk</strong> / <strong>Cry for Diaper</strong>
+                when you need something, and <strong>Sleep</strong> to grow up. Every 100 sleeps = 1 birthday.</p>
+
+                <h3>⏩ Speed</h3>
+                <p>Use the <strong>1x–20x</strong> buttons to control how fast days pass.</p>
+
+                <h3>🏫 Starting School (Age 5)</h3>
+                <p>Your parents ask you to choose:</p>
+                <ul>
+                    <li>🏆 <strong>SIP International</strong> — hardest, but +8 education per study</li>
+                    <li>📖 <strong>Ohlor</strong> — balanced, +4 education per study</li>
+                    <li>🏠 <strong>Homeschool</strong> — calm and safe, +5 education, no bullies or exams — but no classmates to make friends with</li>
+                </ul>
+
+                <h3>📚 School Life</h3>
+                <p>Each day has 4 classes — <strong>Math, Reading, Science, Art</strong>. Click your teacher to answer
+                a question for your grade. Every 10th day is an <strong>Exam Day</strong> — fail one and your parents
+                will be furious when you get home! Click your classmates to chat with them.</p>
+
+                <h3>📝 Homework</h3>
+                <p>After a full school day, you'll be assigned homework in a random subject. Do it at home
+                (a button appears) before your next day at school — or the teacher will notice, and you'll
+                lose happiness.</p>
+
+                <h3>🏙️ Moving Cities</h3>
+                <p>Rarely, your family moves to a brand new city. Your old classmates will miss you, but you'll
+                meet a whole new set of friends — and each city teaches its own special facts too!</p>
+
+                <h3>🎲 Random Events</h3>
+                <ul>
+                    <li>😠 <strong>Bullies</strong> sometimes show up at school — stand up to them, walk away, or tell the teacher (the safest choice!)</li>
+                    <li>🐾 A <strong>pet might go missing</strong> near your house — find it in time for a reward</li>
+                    <li>💰 You might <strong>find a wallet</strong> — keep the cash, or turn it in for less money but more happiness</li>
+                    <li>🚪 <strong>Relatives</strong> visit sometimes — click them to say hi!</li>
+                </ul>
+
+                <h3>🍳 Cooking</h3>
+                <p>Hit the <strong>Cook</strong> button anytime for a quick cooking mini-game.</p>
+
+                <h3>💾 Saving</h3>
+                <p>Your game saves automatically. Come back anytime and hit <strong>Continue Saved Game</strong>!</p>
+
+            </div>
+            <button class="action-btn" onclick="closeHowToPlay()" style="margin-top:14px">✖ Close</button>
+        </div>
+    </div>
+
+    <!-- GAME SCREEN -->
+    <div id="game-screen" class="hidden">
+        <div id="stats-bar">
+            <span>👤 <span id="name-display">Player</span></span>
+            <span>🏙️ <span id="city-display">Maple Grove</span></span>
+            <span>🧒 Age: <span id="age-display">1</span></span>
+            <span>💰 $<span id="money-display">0</span></span>
+            <span>😊 <span id="happy-display">50</span></span>
+            <span>❤️ <span id="health-display">100</span></span>
+            <span>📚 <span id="edu-display">0</span></span>
+            <span id="grade-display" style="display:none">🎒 Grade <span id="grade-num">1</span></span>
+            <span id="location-name">🏠 Home</span>
+        </div>
+        <div id="three-container"></div>
+        <div id="action-panel"></div>
+    </div>
+
+    <!-- EVENT BANNER (milk, diaper, etc.) -->
+    <div id="event-banner" class="hidden">
+        <div id="event-content"></div>
+    </div>
+
+    <!-- COOKING MINI GAME OVERLAY -->
+    <div id="minigame-overlay" class="hidden">
+        <div id="minigame-box">
+            <h2>🍳 Cooking Game</h2>
+            <div id="mg-recipe"></div>
+            <div id="mg-pot">🥘 Pot: (empty)</div>
+            <div id="mg-ingredients"></div>
+            <div id="mg-message"></div>
+            <div id="mg-cook-section"></div>
+            <button class="action-btn" onclick="closeMiniGame()" style="margin-top:10px">✖ Close</button>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.min.js"></script>
+    <script src="game.js?v=16"></script>
+    <script>
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => navigator.serviceWorker.register('sw.js'));
+        }
+    </script>
+</body>
+</html>
