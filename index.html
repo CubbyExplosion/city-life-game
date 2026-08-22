@@ -244,5 +244,18 @@ footer a { text-decoration: underline; }
   <br><a href="privacy.html">Privacy Policy</a>
 </footer>
 
+<script>
+  // Cleanup: the game used to live at this root URL and registered a service worker
+  // scoped to the whole site. Anyone who visited before this page existed would get
+  // stuck seeing the old cached game here instead of this landing page. Unregister
+  // any such leftover worker so this page always loads fresh.
+  if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.getRegistrations().then((regs) => {
+      regs.forEach((reg) => {
+        if (reg.scope === location.origin + '/city-life-game/') reg.unregister();
+      });
+    });
+  }
+</script>
 </body>
 </html>
