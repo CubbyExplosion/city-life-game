@@ -4,4 +4,8 @@
     <loc>https://cubbyexplosion.github.io/city-life-game/</loc>
     <priority>1.0</priority>
   </url>
+  <url>
+    <loc>https://cubbyexplosion.github.io/city-life-game/play/</loc>
+    <priority>0.9</priority>
+  </url>
 </urlset>

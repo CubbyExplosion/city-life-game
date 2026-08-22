@@ -1,157 +1,248 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-    <title>City Life — Grow up from baby to grandparent in 3D | Cubby Explosion</title>
-    <meta name="description" content="City Life is a free 3D life simulator by Cubby Explosion: grow up from a baby to age 85, choose your school, make friends, and handle whatever life throws at you — all in your browser, no download needed.">
-    <meta name="author" content="Cubby Explosion">
-    <meta name="keywords" content="City Life, Cubby Explosion, 3D life sim, free browser game, life simulation game">
-    <meta property="og:title" content="City Life — a 3D life-sim game by Cubby Explosion">
-    <meta property="og:description" content="Grow up from a baby to age 85, choose your school, make friends, and handle whatever life throws at you — free, right in your browser.">
-    <meta property="og:site_name" content="City Life">
-    <meta property="og:type" content="website">
-    <script type="application/ld+json">
-    {
-      "@context": "https://schema.org",
-      "@type": "VideoGame",
-      "name": "City Life",
-      "description": "A free 3D life-simulation browser game — grow up from a baby to age 85, choose your school, make friends, and handle whatever life throws at you.",
-      "genre": "Life Simulation",
-      "playMode": "SinglePlayer",
-      "applicationCategory": "Game",
-      "operatingSystem": "Any (runs in a web browser)",
-      "creator": { "@type": "Organization", "name": "Cubby Explosion" },
-      "publisher": { "@type": "Organization", "name": "Cubby Explosion" },
-      "offers": { "@type": "Offer", "price": "0", "priceCurrency": "USD" }
-    }
-    </script>
-    <link rel="stylesheet" href="style.css?v=2">
-    <link rel="manifest" href="manifest.json">
-    <link rel="icon" href="icon-192.png">
-    <link rel="apple-touch-icon" href="icon-512.png">
-    <meta name="theme-color" content="#16213e">
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>City Life — Grow up from baby to grandparent in 3D | Cubby Explosion</title>
+<meta name="description" content="City Life is a free 3D life simulator by Cubby Explosion: grow up from a baby to age 85, choose your school, make friends, and handle whatever life throws at you — all in your browser, no download needed.">
+<meta name="author" content="Cubby Explosion">
+<meta name="keywords" content="City Life, Cubby Explosion, 3D life sim, free browser game, life simulation game">
+<meta property="og:title" content="City Life — a 3D life-sim game by Cubby Explosion">
+<meta property="og:description" content="Grow up from a baby to age 85, choose your school, make friends, and handle whatever life throws at you — free, right in your browser.">
+<meta property="og:site_name" content="City Life">
+<meta property="og:type" content="website">
+<link rel="icon" href="play/icon-192.png">
+<meta name="theme-color" content="#16213e">
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "VideoGame",
+  "name": "City Life",
+  "description": "A free 3D life-simulation browser game — grow up from a baby to age 85, choose your school, make friends, and handle whatever life throws at you.",
+  "genre": "Life Simulation",
+  "playMode": "SinglePlayer",
+  "applicationCategory": "Game",
+  "operatingSystem": "Any (runs in a web browser)",
+  "creator": { "@type": "Organization", "name": "Cubby Explosion" },
+  "publisher": { "@type": "Organization", "name": "Cubby Explosion" },
+  "offers": { "@type": "Offer", "price": "0", "priceCurrency": "USD" }
+}
+</script>
+<style>
+:root {
+  --bg: #1a1a2e;
+  --panel: #16213e;
+  --panel2: #0f3460;
+  --accent: #e94560;
+  --gold: #FFD700;
+  --text: #eee;
+  --muted: #9aa2ba;
+}
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body { font-family: Arial, sans-serif; background: var(--bg); color: var(--text); line-height: 1.5; }
+a { color: inherit; text-decoration: none; }
+img { max-width: 100%; display: block; }
+
+nav {
+  position: sticky; top: 0; z-index: 10;
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 14px 24px; background: rgba(22,33,62,0.92); backdrop-filter: blur(6px);
+  border-bottom: 1px solid rgba(255,255,255,0.08);
+}
+.navLogo { font-weight: bold; font-size: 1.2em; letter-spacing: 1px; }
+.navLogo span { color: var(--gold); }
+.navPlay {
+  background: var(--accent); color: white; padding: 8px 18px; border-radius: 8px;
+  font-weight: bold; transition: transform 0.15s;
+}
+.navPlay:hover { transform: scale(1.05); }
+
+.hero { text-align: center; padding: 64px 20px 40px; max-width: 900px; margin: 0 auto; }
+.heroBadge {
+  display: inline-block; background: rgba(255,215,0,0.12); color: var(--gold);
+  border: 1px solid rgba(255,215,0,0.4); padding: 6px 16px; border-radius: 999px;
+  font-size: 0.8em; font-weight: bold; margin-bottom: 20px;
+}
+.hero h1 { font-size: 3.2em; letter-spacing: 2px; margin-bottom: 14px; }
+.hero h1 span { color: var(--accent); }
+.tagline { color: var(--muted); font-size: 1.15em; max-width: 640px; margin: 0 auto 28px; }
+.heroCtas { display: flex; gap: 14px; justify-content: center; flex-wrap: wrap; margin-bottom: 12px; }
+.btnPrimary {
+  background: var(--accent); color: white; padding: 14px 32px; border-radius: 10px;
+  font-weight: bold; font-size: 1.05em; transition: transform 0.15s;
+}
+.btnPrimary:hover { transform: scale(1.05); }
+.btnGhost {
+  border: 2px solid var(--panel2); padding: 12px 28px; border-radius: 10px;
+  font-weight: bold; color: var(--text); transition: border-color 0.15s;
+}
+.btnGhost:hover { border-color: var(--gold); }
+.heroNote { color: var(--muted); font-size: 0.85em; margin-top: 8px; }
+
+.stats {
+  display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+  gap: 18px; max-width: 800px; margin: 44px auto 0; padding: 0 20px;
+}
+.stat { text-align: center; }
+.stat .num { font-size: 2em; font-weight: bold; color: var(--gold); }
+.stat .label { color: var(--muted); font-size: 0.85em; margin-top: 2px; }
+
+section { max-width: 1000px; margin: 0 auto; padding: 56px 24px; }
+.sectionHead { text-align: center; max-width: 620px; margin: 0 auto 36px; }
+.eyebrow { color: var(--accent); font-weight: bold; font-size: 0.8em; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 8px; }
+.sectionHead h2 { font-size: 1.8em; margin-bottom: 10px; }
+.sectionHead p { color: var(--muted); }
+
+.featureGrid { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 20px; }
+.card { background: var(--panel); border: 1px solid rgba(255,255,255,0.06); border-radius: 14px; padding: 24px; }
+.card .icon { font-size: 1.8em; }
+.card h3 { margin: 10px 0 8px; font-size: 1.1em; }
+.card p { color: var(--muted); font-size: 0.92em; }
+
+.schoolGrid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 20px; }
+.schoolCard { background: var(--panel); border-radius: 14px; padding: 24px; text-align: center; border: 2px solid transparent; }
+.schoolCard.sip { border-color: var(--gold); }
+.schoolCard.ohlor { border-color: #3498db; }
+.schoolCard.home { border-color: #2ecc71; }
+.schoolCard .icon { font-size: 2em; margin-bottom: 8px; }
+.schoolCard h3 { margin-bottom: 10px; }
+.schoolCard p { color: var(--muted); font-size: 0.9em; margin-bottom: 4px; }
+
+.strip { display: grid; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); gap: 16px; }
+.stripCard { background: var(--panel); border-radius: 12px; padding: 20px; text-align: center; }
+.stripCard .icon { font-size: 1.6em; margin-bottom: 8px; }
+.stripCard h4 { margin-bottom: 6px; font-size: 1em; }
+.stripCard p { color: var(--muted); font-size: 0.85em; }
+
+.cta {
+  text-align: center; padding: 70px 24px; background: var(--panel);
+  border-radius: 20px; max-width: 900px; margin: 20px auto 60px;
+}
+.cta h2 { font-size: 1.8em; margin-bottom: 20px; }
+
+footer { text-align: center; padding: 30px; color: var(--muted); font-size: 0.85em; }
+footer a { text-decoration: underline; }
+</style>
 </head>
 <body>
 
-    <!-- START SCREEN -->
-    <div id="start-screen">
-        <h1>City Life</h1>
-        <p>Live from age 1 to 85 in a modern city</p>
-        <h2>Who are you?</h2>
-        <div class="gender-buttons">
-            <button class="gender-btn" onclick="startGame('boy')">👦 Boy</button>
-            <button class="gender-btn" onclick="startGame('girl')">👧 Girl</button>
-        </div>
-        <button id="continue-btn" class="continue-btn" onclick="continueGame()" style="display:none">
-            ▶ Continue Saved Game
-        </button>
-        <button class="howto-btn" onclick="showHowToPlay()">📖 How to Play</button>
+<nav>
+  <div class="navLogo">CITY <span>LIFE</span></div>
+  <a class="navPlay" href="play/">▶ Play Free</a>
+</nav>
+
+<div class="hero">
+  <div class="heroBadge">🎮 FREE TO PLAY — NO DOWNLOAD</div>
+  <h1>CITY <span>LIFE</span></h1>
+  <p class="tagline">Live an entire life — from a baby all the way to age 85. Choose your school, make friends, keep your happiness up, and handle whatever life throws at you. All running right in your browser.</p>
+  <div class="heroCtas">
+    <a class="btnPrimary" href="play/">▶ Play Now</a>
+    <a class="btnGhost" href="#features">See what's inside ↓</a>
+  </div>
+  <div class="heroNote">Works on desktop and mobile · Your progress saves automatically</div>
+
+  <div class="stats">
+    <div class="stat"><div class="num">85</div><div class="label">Years to live</div></div>
+    <div class="stat"><div class="num">3</div><div class="label">School paths</div></div>
+    <div class="stat"><div class="num">4</div><div class="label">Real subjects</div></div>
+    <div class="stat"><div class="num">3</div><div class="label">Cities to live in</div></div>
+    <div class="stat"><div class="num">0</div><div class="label">Downloads needed</div></div>
+  </div>
+</div>
+
+<section id="features">
+  <div class="sectionHead">
+    <div class="eyebrow">What you can do</div>
+    <h2>One life, start to finish</h2>
+    <p>City Life isn't a level you finish — it's a life you live through. Everything below is real and playable today.</p>
+  </div>
+  <div class="featureGrid">
+    <div class="card">
+      <span class="icon">👶</span>
+      <h3>Start as a baby</h3>
+      <p>Cry for milk, cry for a diaper change, and sleep your way through the years before you're old enough to walk the world yourself.</p>
     </div>
-
-    <!-- HOW TO PLAY GUIDE -->
-    <div id="howto-overlay" class="hidden">
-        <div id="howto-box">
-            <h2>📖 How to Play City Life</h2>
-            <div id="howto-content">
-
-                <h3>🎯 The Goal</h3>
-                <p>Live an entire life — from a baby all the way to age 85! Keep your four stats healthy:
-                💰 Money, 😊 Happiness, ❤️ Health, and 📚 Education. Reach age 85, or let your Health hit 0,
-                and you start a brand new life.</p>
-
-                <h3>🕹️ Controls</h3>
-                <p>Arrow keys or <strong>WASD</strong> to walk. Click on people in the 3D world to interact with them.</p>
-
-                <h3>👶 Baby Years (Age 1-4)</h3>
-                <p>You're stuck in your crib! Use <strong>Cry for Milk</strong> / <strong>Cry for Diaper</strong>
-                when you need something, and <strong>Sleep</strong> to grow up. Every 100 sleeps = 1 birthday.</p>
-
-                <h3>⏩ Speed</h3>
-                <p>Use the <strong>1x–20x</strong> buttons to control how fast days pass.</p>
-
-                <h3>🏫 Starting School (Age 5)</h3>
-                <p>Your parents ask you to choose:</p>
-                <ul>
-                    <li>🏆 <strong>SIP International</strong> — hardest, but +8 education per study</li>
-                    <li>📖 <strong>Ohlor</strong> — balanced, +4 education per study</li>
-                    <li>🏠 <strong>Homeschool</strong> — calm and safe, +5 education, no bullies or exams — but no classmates to make friends with</li>
-                </ul>
-
-                <h3>📚 School Life</h3>
-                <p>Each day has 4 classes — <strong>Math, Reading, Science, Art</strong>. Click your teacher to answer
-                a question for your grade. Every 10th day is an <strong>Exam Day</strong> — fail one and your parents
-                will be furious when you get home! Click your classmates to chat with them.</p>
-
-                <h3>📝 Homework</h3>
-                <p>After a full school day, you'll be assigned homework in a random subject. Do it at home
-                (a button appears) before your next day at school — or the teacher will notice, and you'll
-                lose happiness.</p>
-
-                <h3>🏙️ Moving Cities</h3>
-                <p>Rarely, your family moves to a brand new city. Your old classmates will miss you, but you'll
-                meet a whole new set of friends — and each city teaches its own special facts too!</p>
-
-                <h3>🎲 Random Events</h3>
-                <ul>
-                    <li>😠 <strong>Bullies</strong> sometimes show up at school — stand up to them, walk away, or tell the teacher (the safest choice!)</li>
-                    <li>🐾 A <strong>pet might go missing</strong> near your house — find it in time for a reward</li>
-                    <li>💰 You might <strong>find a wallet</strong> — keep the cash, or turn it in for less money but more happiness</li>
-                    <li>🚪 <strong>Relatives</strong> visit sometimes — click them to say hi!</li>
-                </ul>
-
-                <h3>🍳 Cooking</h3>
-                <p>Hit the <strong>Cook</strong> button anytime for a quick cooking mini-game.</p>
-
-                <h3>💾 Saving</h3>
-                <p>Your game saves automatically. Come back anytime and hit <strong>Continue Saved Game</strong>!</p>
-
-            </div>
-            <button class="action-btn" onclick="closeHowToPlay()" style="margin-top:14px">✖ Close</button>
-        </div>
+    <div class="card">
+      <span class="icon">📚</span>
+      <h3>Four real subjects</h3>
+      <p>Math, Reading, Science, and Art — every question is scaled to your actual grade, from simple addition to real art history.</p>
     </div>
-
-    <!-- GAME SCREEN -->
-    <div id="game-screen" class="hidden">
-        <div id="stats-bar">
-            <span>👤 <span id="name-display">Player</span></span>
-            <span>🏙️ <span id="city-display">Maple Grove</span></span>
-            <span>🧒 Age: <span id="age-display">1</span></span>
-            <span>💰 $<span id="money-display">0</span></span>
-            <span>😊 <span id="happy-display">50</span></span>
-            <span>❤️ <span id="health-display">100</span></span>
-            <span>📚 <span id="edu-display">0</span></span>
-            <span id="grade-display" style="display:none">🎒 Grade <span id="grade-num">1</span></span>
-            <span id="location-name">🏠 Home</span>
-        </div>
-        <div id="three-container"></div>
-        <div id="action-panel"></div>
+    <div class="card">
+      <span class="icon">📝</span>
+      <h3>Homework and exam days</h3>
+      <p>Miss your homework and the teacher notices. Fail an exam and your parents find out the moment you get home.</p>
     </div>
-
-    <!-- EVENT BANNER (milk, diaper, etc.) -->
-    <div id="event-banner" class="hidden">
-        <div id="event-content"></div>
+    <div class="card">
+      <span class="icon">🏙️</span>
+      <h3>Move to a new city</h3>
+      <p>Every city has its own classmates to befriend and its own local facts woven right into your classes.</p>
     </div>
-
-    <!-- COOKING MINI GAME OVERLAY -->
-    <div id="minigame-overlay" class="hidden">
-        <div id="minigame-box">
-            <h2>🍳 Cooking Game</h2>
-            <div id="mg-recipe"></div>
-            <div id="mg-pot">🥘 Pot: (empty)</div>
-            <div id="mg-ingredients"></div>
-            <div id="mg-message"></div>
-            <div id="mg-cook-section"></div>
-            <button class="action-btn" onclick="closeMiniGame()" style="margin-top:10px">✖ Close</button>
-        </div>
+    <div class="card">
+      <span class="icon">🎲</span>
+      <h3>Real random events</h3>
+      <p>Relatives dropping by, a bully to face down, a missing pet to track, a wallet you could keep or return — every choice matters.</p>
     </div>
+    <div class="card">
+      <span class="icon">🍳</span>
+      <h3>A cooking mini-game</h3>
+      <p>Take a break from life and cook up a real recipe, step by step, for a happiness boost whenever you want one.</p>
+    </div>
+  </div>
+</section>
 
-    <script src="https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.min.js"></script>
-    <script src="game.js?v=16"></script>
-    <script>
-        if ('serviceWorker' in navigator) {
-            window.addEventListener('load', () => navigator.serviceWorker.register('sw.js'));
-        }
-    </script>
+<section>
+  <div class="sectionHead">
+    <div class="eyebrow">Age 5 decision</div>
+    <h2>Three schools, three completely different lives</h2>
+    <p>This one choice shapes everything about how your character grows up.</p>
+  </div>
+  <div class="schoolGrid">
+    <div class="schoolCard sip">
+      <div class="icon">🏆</div>
+      <h3>SIP International</h3>
+      <p>The hardest path.</p>
+      <p>Biggest education rewards. Real classmates, real exams, real pressure.</p>
+    </div>
+    <div class="schoolCard ohlor">
+      <div class="icon">📖</div>
+      <h3>Ohlor</h3>
+      <p>The balanced path.</p>
+      <p>Solid rewards without SIP's intensity — still the full school experience.</p>
+    </div>
+    <div class="schoolCard home">
+      <div class="icon">🏠</div>
+      <h3>Homeschool</h3>
+      <p>The calm path.</p>
+      <p>No bullies, no exam stress — study every subject at your own pace at home.</p>
+    </div>
+  </div>
+</section>
+
+<section>
+  <div class="sectionHead">
+    <div class="eyebrow">Life happens</div>
+    <h2>Your life keeps throwing things at you</h2>
+    <p>Not just decoration — real events with real consequences for your stats.</p>
+  </div>
+  <div class="strip">
+    <div class="stripCard"><div class="icon">🚪</div><h4>Family visits</h4><p>Grandparents, aunts, and uncles drop by to say hi.</p></div>
+    <div class="stripCard"><div class="icon">😠</div><h4>Face a bully</h4><p>Stand up to them, walk away, or tell the teacher — your call.</p></div>
+    <div class="stripCard"><div class="icon">🐾</div><h4>A pet goes missing</h4><p>Find it in time for a reward, before it wanders off.</p></div>
+    <div class="stripCard"><div class="icon">💰</div><h4>Find a wallet</h4><p>Keep the cash, or turn it in for something better.</p></div>
+    <div class="stripCard"><div class="icon">🏙️</div><h4>Move cities</h4><p>Leave old friends behind and start over somewhere new.</p></div>
+    <div class="stripCard"><div class="icon">🎂</div><h4>Birthdays every year</h4><p>100 days lived, one year older, sometimes with cake.</p></div>
+  </div>
+</section>
+
+<div class="cta">
+  <h2>Ready to start your City Life?</h2>
+  <a class="btnPrimary" href="play/">▶ Play Now — It's Free</a>
+</div>
+
+<footer>
+  A free browser game by <b>Cubby Explosion</b>. No download, no account, no ads.
+  <br><a href="privacy.html">Privacy Policy</a>
+</footer>
+
 </body>
 </html>
