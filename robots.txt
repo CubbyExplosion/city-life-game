@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://cubbyexplosion.github.io/city-life-game/sitemap.xml
