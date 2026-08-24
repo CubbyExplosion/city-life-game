@@ -26,7 +26,7 @@
       "offers": { "@type": "Offer", "price": "0", "priceCurrency": "USD" }
     }
     </script>
-    <link rel="stylesheet" href="style.css?v=2">
+    <link rel="stylesheet" href="style.css?v=3">
     <link rel="manifest" href="manifest.json">
     <link rel="icon" href="icon-192.png">
     <link rel="apple-touch-icon" href="icon-512.png">
@@ -63,9 +63,13 @@
                 <h3>🕹️ Controls</h3>
                 <p>Arrow keys or <strong>WASD</strong> to walk. Click on people in the 3D world to interact with them.</p>
 
-                <h3>👶 Baby Years (Age 1-4)</h3>
+                <h3>👶 Baby Years (Age 1-2)</h3>
                 <p>You're stuck in your crib! Use <strong>Cry for Milk</strong> / <strong>Cry for Diaper</strong>
                 when you need something, and <strong>Sleep</strong> to grow up. Every 100 sleeps = 1 birthday.</p>
+
+                <h3>🚶 Toddler Years (Age 3-4)</h3>
+                <p>You can walk around now! Use the <strong>Cook</strong> and <strong>Go Shopping</strong> buttons
+                for quick mini-games while you wait to start school at age 5.</p>
 
                 <h3>⏩ Speed</h3>
                 <p>Use the <strong>1x–20x</strong> buttons to control how fast days pass.</p>
@@ -146,8 +150,21 @@
         </div>
     </div>
 
+    <!-- TODDLER SHOPPING MINI GAME -->
+    <div id="shopping-overlay" class="hidden">
+        <div id="shopping-box">
+            <h2>🛍️ Shopping Trip</h2>
+            <div id="shop-list"></div>
+            <div id="shop-cart">🛒 Cart: (empty)</div>
+            <div id="shop-items"></div>
+            <div id="shop-message"></div>
+            <div id="shop-checkout-section"></div>
+            <button class="action-btn" onclick="closeShopping()" style="margin-top:10px">✖ Close</button>
+        </div>
+    </div>
+
     <script src="https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.min.js"></script>
-    <script src="game.js?v=16"></script>
+    <script src="game.js?v=17"></script>
     <script>
         if ('serviceWorker' in navigator) {
             window.addEventListener('load', () => navigator.serviceWorker.register('sw.js'));

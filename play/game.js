@@ -771,6 +771,20 @@ const mg = {
     cookInterval: null
 };
 
+const SHOPPING_LISTS = [
+    { name: 'Snack Run',      steps: ['🍎','🥛','🍞'], reward: { happiness: 5  } },
+    { name: 'Toy Store Trip', steps: ['🧸','🎈','🚗'], reward: { happiness: 8  } },
+    { name: 'Fruit Stand',    steps: ['🍌','🍇','🍓'], reward: { happiness: 6  } },
+    { name: 'Baby Aisle',     steps: ['🧷','🧴','🧦'], reward: { happiness: 4  } },
+];
+const ALL_SHOP_ITEMS = ['🍎','🥛','🍞','🧸','🎈','🚗','🍌','🍇','🍓','🧷','🧴','🧦','📚','🎨'];
+
+const shop = {
+    list: null,
+    added: [],
+    checkoutInterval: null
+};
+
 // =============================================
 // SAVE / LOAD
 // =============================================
@@ -982,9 +996,12 @@ function updateActionPanel() {
         const homeworkBtn = player.homework
             ? `<button class="action-btn" onclick="doHomework()">📝 Homework (${player.homework})</button>`
             : '';
+        const shopBtn = player.age >= 3
+            ? `<button class="action-btn" onclick="openShopping()">🛍️ Go Shopping</button>`
+            : '';
         panel.innerHTML = `${bMsg}
             <div style="color:#aaa;margin-bottom:6px">⬆️⬇️⬅️➡️ to walk &nbsp;|&nbsp; ${dayInfo}</div>
-            ${cookBtn} ${studyBtn} ${homeworkBtn}`;
+            ${cookBtn} ${shopBtn} ${studyBtn} ${homeworkBtn}`;
     }
 }
 
@@ -1092,6 +1109,89 @@ function finishCooking() {
 function closeMiniGame() {
     if (mg.cookInterval) clearInterval(mg.cookInterval);
     document.getElementById('minigame-overlay').classList.add('hidden');
+}
+
+// =============================================
+// TODDLER SHOPPING MINI GAME
+// =============================================
+function openShopping() {
+    shop.list = SHOPPING_LISTS[Math.floor(Math.random() * SHOPPING_LISTS.length)];
+    shop.added = [];
+    if (shop.checkoutInterval) clearInterval(shop.checkoutInterval);
+    document.getElementById('shopping-overlay').classList.remove('hidden');
+    renderShopping();
+}
+
+function renderShopping() {
+    const s = shop.list;
+
+    document.getElementById('shop-list').innerHTML =
+        `Find these: <strong>${s.name}</strong><br>Pick them in order: ${s.steps.join(' → ')}`;
+
+    document.getElementById('shop-cart').textContent =
+        `🛒 Cart: ${shop.added.length ? shop.added.join(' ') : '(empty)'}`;
+
+    // Pick 2 wrong items as decoys
+    const decoys = ALL_SHOP_ITEMS.filter(i => !s.steps.includes(i))
+                                  .sort(() => Math.random() - 0.5)
+                                  .slice(0, 2);
+    const options = [...s.steps, ...decoys].sort(() => Math.random() - 0.5);
+
+    document.getElementById('shop-items').innerHTML =
+        options.map(item => `<button class="ing-btn" onclick="addShopItem('${item}')">${item}</button>`).join('');
+
+    // Show Checkout button only when everything on the list is in the cart
+    if (shop.added.length === s.steps.length) {
+        document.getElementById('shop-checkout-section').innerHTML =
+            `<button class="action-btn" onclick="startCheckout()">🛒 Check Out!</button>`;
+    } else {
+        document.getElementById('shop-checkout-section').innerHTML = '';
+    }
+}
+
+function addShopItem(item) {
+    const nextNeeded = shop.list.steps[shop.added.length];
+    if (item === nextNeeded) {
+        shop.added.push(item);
+        document.getElementById('shop-message').textContent = '✅ Nice pick!';
+        renderShopping();
+    } else {
+        document.getElementById('shop-message').textContent = `❌ Not that one! Need ${nextNeeded} next.`;
+    }
+}
+
+function startCheckout() {
+    let progress = 0;
+    document.getElementById('shop-checkout-section').innerHTML = `
+        <p>🛒 Checking out...</p>
+        <div class="progress-bar"><div class="progress-fill" id="shop-fill" style="width:0%"></div></div>`;
+    document.getElementById('shop-items').innerHTML = '';
+    document.getElementById('shop-message').textContent = '';
+
+    shop.checkoutInterval = setInterval(() => {
+        progress += 2;
+        const fill = document.getElementById('shop-fill');
+        if (fill) fill.style.width = progress + '%';
+        if (progress >= 100) {
+            clearInterval(shop.checkoutInterval);
+            finishShopping();
+        }
+    }, 60);
+}
+
+function finishShopping() {
+    const s = shop.list;
+    player.happiness = Math.min(100, player.happiness + s.reward.happiness);
+    saveGame();
+    updateStats();
+    document.getElementById('shop-checkout-section').innerHTML =
+        `<p style="color:#4CAF50;font-size:1.1em">🎉 Great trip! +${s.reward.happiness} happiness</p>
+         <button class="action-btn" onclick="closeShopping()">Done!</button>`;
+}
+
+function closeShopping() {
+    if (shop.checkoutInterval) clearInterval(shop.checkoutInterval);
+    document.getElementById('shopping-overlay').classList.add('hidden');
 }
 
 // =============================================
