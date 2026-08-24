@@ -2973,6 +2973,12 @@ function restartGame() {
     activePet = null;
     homeschoolSubjectIndex = 0;
     currentQuestion = null;
+    // Remove any dynamically-created popup that might still be open (found money,
+    // bully confrontation, a class/homework/homeschool/PE question, school choice)
+    ['money-overlay', 'bully-overlay', 'math-overlay', 'school-overlay'].forEach(id => {
+        const el = document.getElementById(id);
+        if (el) el.remove();
+    });
     localStorage.clear();
     document.getElementById('game-screen').classList.add('hidden');
     document.getElementById('start-screen').classList.remove('hidden');
