@@ -968,7 +968,7 @@ function updateActionPanel() {
     const dayInfo = `☀️ Day <strong>${player.sleepCount}/100</strong> &nbsp;|&nbsp; Next day in: <strong><span id="day-timer">--:--</span></strong> &nbsp;|&nbsp; ⏩ ${speedBtns}`;
 
     if (inSchool) {
-        const isClassPd = [0, 2, 3, 5].includes(schoolPeriod);
+        const isClassPd = [0, 2, 3, 5, 6].includes(schoolPeriod);
         const progress = isClassPd
             ? ` <span style="color:#2ecc71">${correctThisPeriod}/${QUESTIONS_PER_CLASS} ✓</span>` : '';
         panel.innerHTML = `
@@ -1835,7 +1835,7 @@ function study() {
 // =============================================
 // HOMESCHOOL — study session covering all 4 subjects at home
 // =============================================
-const HOMESCHOOL_SUBJECTS = ['Math', 'Reading', 'Science', 'Art'];
+const HOMESCHOOL_SUBJECTS = ['Math', 'Reading', 'Science', 'Art', 'PE'];
 let homeschoolSubjectIndex = 0;
 
 function studyAtHome() {
@@ -1849,6 +1849,24 @@ function askHomeschoolQuestion() {
     if (document.getElementById('math-overlay')) return;
     if (player.school !== 'Homeschool') return; // session ended (e.g. restart) before this scheduled question fired
     const subject = HOMESCHOOL_SUBJECTS[homeschoolSubjectIndex];
+
+    if (subject === 'PE') {
+        startPEChallenge(`🏠 Homeschool — Subject ${homeschoolSubjectIndex + 1} of ${HOMESCHOOL_SUBJECTS.length}`, () => {
+            player.education = Math.min(100, player.education + 5);
+            player.happiness = Math.min(100, player.happiness + 2);
+            showEvent('✅', `Great workout! +5 education, +2 happiness`);
+            updateStats(); saveGame();
+
+            homeschoolSubjectIndex++;
+            if (homeschoolSubjectIndex < HOMESCHOOL_SUBJECTS.length) {
+                setTimeout(askHomeschoolQuestion, 1200);
+            } else {
+                setTimeout(() => showEvent('🎉', "Homeschool session done for today! Great work!"), 1200);
+            }
+        });
+        return;
+    }
+
     const q = generateClassQuestion(subject);
     currentQuestion = q;
     const emoji = SUBJECT_EMOJI[q.subject] || '📋';
@@ -1919,12 +1937,12 @@ let schoolObjects = [];
 let schoolNPCList = [];
 let teacherApproachState = 'wandering';
 let nextApproachTime = 0;
-let schoolPeriod = 0;       // 0=class1, 1=snack, 2=class2, 3=class3, 4=lunch, 5=class4, 6=done
+let schoolPeriod = 0;       // 0=class1, 1=snack, 2=class2, 3=class3, 4=lunch, 5=class4, 6=PE, 7=done
 let correctThisPeriod = 0;
 const QUESTIONS_PER_CLASS = 3;
-const SUBJECT_BY_PERIOD = { 0: 'Math', 2: 'Reading', 3: 'Science', 5: 'Art' };
-const SUBJECT_EMOJI = { Math: '📐', Reading: '📖', Science: '🔬', Art: '🎨' };
-const PERIOD_LABELS = ['📐 Math','🍎 Snack','📖 Reading','🔬 Science','🍽️ Lunch','🎨 Art','🏠 Done!'];
+const SUBJECT_BY_PERIOD = { 0: 'Math', 2: 'Reading', 3: 'Science', 5: 'Art', 6: 'PE' };
+const SUBJECT_EMOJI = { Math: '📐', Reading: '📖', Science: '🔬', Art: '🎨', PE: '🏃' };
+const PERIOD_LABELS = ['📐 Math','🍎 Snack','📖 Reading','🔬 Science','🍽️ Lunch','🎨 Art','🏃 PE','🏠 Done!'];
 
 function schoolRandomPos(isTeacher) {
     const isSIP = player.school === 'SIP';
@@ -2227,8 +2245,8 @@ function answerHomework(chosenIndex, correctIndex) {
 function updateSchoolNPCs() {
     const teacherNpc = schoolNPCList.find(n => n.isTeacher);
 
-    // Teacher only approaches during class periods (0, 2, 3, 5) AND on exam days
-    const isClassPeriod = [0, 2, 3, 5].includes(schoolPeriod);
+    // Teacher only approaches during class periods (0, 2, 3, 5, 6) AND on exam days
+    const isClassPeriod = [0, 2, 3, 5, 6].includes(schoolPeriod);
     if (teacherNpc && isClassPeriod && isExamDay) {
         if (teacherApproachState === 'wandering' && Date.now() > nextApproachTime) {
             teacherApproachState = 'approaching';
@@ -2289,9 +2307,12 @@ function advancePeriod() {
     } else if (schoolPeriod === 4) {
         showFoodBreak('lunch');
     } else if (schoolPeriod === 5) {
-        showEvent('🔔', 'Last class of the day! Class 4 starting!');
+        showEvent('🔔', 'Class 4 starting!');
         nextApproachTime = Date.now() + 3000 + Math.random() * 5000; // 3-8s randomly
-    } else if (schoolPeriod >= 6) {
+    } else if (schoolPeriod === 6) {
+        showEvent('🏃', 'Time for PE! Get ready to move!');
+        nextApproachTime = Date.now() + 3000 + Math.random() * 5000; // 3-8s randomly
+    } else if (schoolPeriod >= 7) {
         showEvent('🎒', 'School day done! Your parent is coming!');
         setTimeout(() => pickUpFromSchool(), 2000);
     }
@@ -2763,12 +2784,85 @@ function generateClassQuestion(subject) {
     return generateMathQuestion();
 }
 
+// ---------------------------------------------
+// PE — physical challenge, not a quiz: click fast to complete it
+// ---------------------------------------------
+const PE_CHALLENGES = [
+    { name: 'Jumping Jacks', emoji: '🤸', target: 10 },
+    { name: 'Push-Ups',      emoji: '💪', target: 12 },
+    { name: 'Sit-Ups',       emoji: '🏋️', target: 12 },
+    { name: 'Squats',        emoji: '🦵', target: 10 },
+    { name: 'High Knees',    emoji: '🏃', target: 14 },
+];
+let peChallenge = null;
+let peClicks = 0;
+let peOnComplete = null;
+
+function startPEChallenge(introLabel, onComplete) {
+    if (document.getElementById('math-overlay')) return;
+    if (document.getElementById('math-inline')) return;
+    peChallenge = PE_CHALLENGES[Math.floor(Math.random() * PE_CHALLENGES.length)];
+    peClicks = 0;
+    peOnComplete = onComplete;
+
+    const overlay = document.createElement('div');
+    overlay.id = 'math-overlay';
+    overlay.style.cssText = `
+        position:fixed; inset:0; z-index:300;
+        display:flex; align-items:center; justify-content:center;
+        background:rgba(0,0,0,0.65); font-family:Arial;
+    `;
+    overlay.innerHTML = `
+        <div style="background:#16213e; border:3px solid #2ecc71; border-radius:16px;
+                    padding:32px 40px; text-align:center; min-width:300px;">
+            <p style="color:#aaa; margin-bottom:4px; font-size:0.85em;">${introLabel}</p>
+            <h2 style="color:#FFD700; font-size:1.6em; margin-bottom:14px;">${peChallenge.emoji} Let's do ${peChallenge.target} ${peChallenge.name}!</h2>
+            <p id="pe-count" style="color:#2ecc71; font-size:2em; font-weight:bold; margin-bottom:18px;">0 / ${peChallenge.target}</p>
+            <button class="action-btn" onclick="doPEClick()" style="font-size:1.3em; padding:16px 40px;">${peChallenge.emoji} GO!</button>
+        </div>
+    `;
+    document.body.appendChild(overlay);
+}
+
+function doPEClick() {
+    peClicks++;
+    const el = document.getElementById('pe-count');
+    if (el) el.textContent = `${peClicks} / ${peChallenge.target}`;
+    if (peClicks >= peChallenge.target) {
+        const overlay = document.getElementById('math-overlay');
+        if (overlay) overlay.remove();
+        const cb = peOnComplete;
+        peOnComplete = null;
+        if (cb) cb();
+    }
+}
+
 let currentQuestion = null;
 
 function askMathQuestion(npcName) {
     if (document.getElementById('math-overlay')) return;
     if (document.getElementById('math-inline')) return;
     const subject = SUBJECT_BY_PERIOD[schoolPeriod] || 'Math';
+
+    if (subject === 'PE') {
+        startPEChallenge(`🏃 PE — ${npcName} says:`, () => {
+            const eduGain = player.school === 'SIP' ? 6 : 4;
+            player.education = Math.min(100, player.education + eduGain);
+            player.happiness = Math.min(100, player.happiness + 5);
+            correctThisPeriod++;
+            const left = QUESTIONS_PER_CLASS - correctThisPeriod;
+            if (left <= 0) {
+                showEvent('🎉', `Great workout! Class done! +${eduGain} education!`);
+                setTimeout(advancePeriod, 1500);
+            } else {
+                showEvent('✅', `Awesome! ${left} more challenge${left > 1 ? 's' : ''} to finish. +${eduGain} edu, +5 happiness!`);
+                nextApproachTime = Date.now() + 3000 + Math.random() * 5000;
+            }
+            updateStats(); saveGame();
+        });
+        return;
+    }
+
     const q = generateClassQuestion(subject);
     currentQuestion = q;
     const emoji = SUBJECT_EMOJI[q.subject] || '📋';
