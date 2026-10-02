@@ -1,5 +1,9 @@
-const CACHE_NAME = 'city-life-v2';
-const ASSETS = ['./', './index.html', './style.css', './game.js', './manifest.json'];
+const CACHE_NAME = 'city-life-v3';
+const ASSETS = [
+    './', './index.html', './style.css', './manifest.json',
+    './src/data.js', './src/state.js', './src/world.js', './src/homelife.js', './src/events.js',
+    './src/minigames.js', './src/school.js', './src/chat.js', './src/core.js', './src/main.js'
+];
 
 self.addEventListener('install', (event) => {
     event.waitUntil(
