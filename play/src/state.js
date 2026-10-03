@@ -106,4 +106,7 @@ let geminiAvailable = false; // disabled until a valid AIza key is added
 // Mini-game state
 const cooldowns = { milk: 0, diaper: 0 }; // cry() cooldowns
 const mg = { recipe: null, added: [], cookInterval: null };       // cooking
-const shop = { list: null, added: [], checkoutInterval: null };   // shopping
+
+// Grocery store (see store.js)
+let inStore = false;         // true while you're at the grocery store (the day clock pauses)
+let store = null;            // everything about the store visit in progress

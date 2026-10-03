@@ -14,6 +14,7 @@ function initThreeJS() {
     // Fresh scene = forget everything that belonged to the old one
     snowPoints = null; snowGround = null; homeExtras = [];
     driving = false; rideState = null; inField = false; fieldBall = null; pickupInProgress = false;
+    inStore = false; store = null;
 
     camera = new THREE.PerspectiveCamera(60, container.clientWidth / container.clientHeight, 0.1, 100);
     camera.position.set(0, 7, 7);
@@ -298,6 +299,8 @@ function animate() {
 
     // During a car ride the whole screen belongs to the ride scene (travel.js)
     if (driving) { updateCarRide(); return; }
+    // At the grocery store the store (store.js) runs everything, including the camera
+    if (inStore) { updateStore(); return; }
 
     if (player.age >= 3) {
         const speed = 0.06;

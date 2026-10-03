@@ -13,7 +13,7 @@ const RIDE_SPEED = 24;   // how fast the scenery rushes past (units per second)
 //   placeText: finishes the sentence "Mom is driving you ..."  (e.g. "to school", "home")
 function driveTo(placeText, emoji, onArrive, opts) {
     opts = opts || {};
-    if (driving || !scene || !playerMesh) return false;
+    if (driving || inStore || !scene || !playerMesh) return false;
     driving = true;
 
     const duration = opts.duration || 4200;
@@ -109,38 +109,7 @@ function driveTo(placeText, emoji, onArrive, opts) {
     }
 
     // 3. The car (an open convertible — a roof only when it's snowing)
-    const car = new THREE.Group();
-    const bodyColor = CAR_COLORS[Math.floor(Math.random() * CAR_COLORS.length)];
-    box(2.2, 0.6, 4.4, 0, 0.55, 0, bodyColor, car);          // the body
-    box(2.0, 0.35, 1.4, 0, 0.98, -1.7, bodyColor, car);      // the hood
-    box(0.7, 0.45, 0.7, -0.55, 0.95, -0.35, 0x34495E, car);  // front seats
-    box(0.7, 0.45, 0.7,  0.55, 0.95, -0.35, 0x34495E, car);
-    box(0.7, 0.6, 0.12, -0.55, 1.3, 0.05, 0x34495E, car);    // front seat backs
-    box(0.7, 0.6, 0.12,  0.55, 1.3, 0.05, 0x34495E, car);
-    box(2.0, 0.45, 0.7, 0, 0.95, 1.1, 0x34495E, car);        // back seat
-    box(2.0, 0.7, 0.12, 0, 1.3, 1.5, 0x34495E, car);         // back seat back
-    const windshield = box(2.0, 0.7, 0.1, 0, 1.3, -0.95, 0xAEE6FF, car);
-    windshield.rotation.x = -0.35;
-    box(0.5, 0.05, 0.5, -0.55, 1.35, -0.8, 0x222222, car);   // steering wheel
-    box(0.4, 0.2, 0.08,  0.7, 0.62, -2.2, 0xFFF59D, car);    // headlights
-    box(0.4, 0.2, 0.08, -0.7, 0.62, -2.2, 0xFFF59D, car);
-    box(0.4, 0.2, 0.08,  0.7, 0.62,  2.2, 0xC0392B, car);    // tail lights
-    box(0.4, 0.2, 0.08, -0.7, 0.62,  2.2, 0xC0392B, car);
-    if (snowy) {
-        [[-1.0, -0.9], [1.0, -0.9], [-1.0, 1.5], [1.0, 1.5]].forEach(([x, z]) => box(0.1, 1.0, 0.1, x, 1.5, z, 0x555555, car));
-        box(2.4, 0.12, 2.9, 0, 2.05, 0.3, 0xFFFFFF, car);    // snowy roof
-    }
-    const wheels = [];
-    [[-1.15, -1.4], [1.15, -1.4], [-1.15, 1.4], [1.15, 1.4]].forEach(([x, z]) => {
-        const pivot = new THREE.Group();
-        pivot.position.set(x, 0.42, z);
-        const tire = new THREE.Mesh(new THREE.CylinderGeometry(0.42, 0.42, 0.3, 14), new THREE.MeshLambertMaterial({ color: 0x222222 }));
-        tire.rotation.z = Math.PI / 2;
-        const hub = new THREE.Mesh(new THREE.BoxGeometry(0.34, 0.18, 0.18), new THREE.MeshLambertMaterial({ color: 0xBDC3C7 }));
-        pivot.add(tire, hub);
-        car.add(pivot);
-        wheels.push(pivot);
-    });
+    const { car, wheels } = buildCarModel(snowy);
 
     // The driver (a parent) and you in the back seat. Everyone's a little smaller so they fit.
     const driver = buildParent(0, 0, driverName === 'Mom' ? 0x4169E1 : 0xC0392B, driverName === 'Mom' ? 0x4B2800 : 0xFFD700);
@@ -181,6 +150,49 @@ function driveTo(placeText, emoji, onArrive, opts) {
         timer: setTimeout(endRide, duration)
     };
     return true;
+}
+
+// Builds a car out of boxes and wheels. Used for the ride (driveTo) and for the car
+// parked outside the grocery store (store.js). Returns { car, wheels }.
+function buildCarModel(snowy) {
+    const car = new THREE.Group();
+    function box(w, h, d, x, y, z, color) {
+        const m = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), new THREE.MeshLambertMaterial({ color }));
+        m.position.set(x, y, z);
+        car.add(m);
+        return m;
+    }
+    const bodyColor = CAR_COLORS[Math.floor(Math.random() * CAR_COLORS.length)];
+    box(2.2, 0.6, 4.4, 0, 0.55, 0, bodyColor);          // the body
+    box(2.0, 0.35, 1.4, 0, 0.98, -1.7, bodyColor);      // the hood
+    box(0.7, 0.45, 0.7, -0.55, 0.95, -0.35, 0x34495E);  // front seats
+    box(0.7, 0.45, 0.7,  0.55, 0.95, -0.35, 0x34495E);
+    box(0.7, 0.6, 0.12, -0.55, 1.3, 0.05, 0x34495E);    // front seat backs
+    box(0.7, 0.6, 0.12,  0.55, 1.3, 0.05, 0x34495E);
+    box(2.0, 0.45, 0.7, 0, 0.95, 1.1, 0x34495E);        // back seat
+    box(2.0, 0.7, 0.12, 0, 1.3, 1.5, 0x34495E);         // back seat back
+    box(2.0, 0.7, 0.1, 0, 1.3, -0.95, 0xAEE6FF).rotation.x = -0.35;   // windshield
+    box(0.5, 0.05, 0.5, -0.55, 1.35, -0.8, 0x222222);   // steering wheel
+    box(0.4, 0.2, 0.08,  0.7, 0.62, -2.2, 0xFFF59D);    // headlights
+    box(0.4, 0.2, 0.08, -0.7, 0.62, -2.2, 0xFFF59D);
+    box(0.4, 0.2, 0.08,  0.7, 0.62,  2.2, 0xC0392B);    // tail lights
+    box(0.4, 0.2, 0.08, -0.7, 0.62,  2.2, 0xC0392B);
+    if (snowy) {
+        [[-1.0, -0.9], [1.0, -0.9], [-1.0, 1.5], [1.0, 1.5]].forEach(([x, z]) => box(0.1, 1.0, 0.1, x, 1.5, z, 0x555555));
+        box(2.4, 0.12, 2.9, 0, 2.05, 0.3, 0xFFFFFF);    // snowy roof
+    }
+    const wheels = [];
+    [[-1.15, -1.4], [1.15, -1.4], [-1.15, 1.4], [1.15, 1.4]].forEach(([x, z]) => {
+        const pivot = new THREE.Group();
+        pivot.position.set(x, 0.42, z);
+        const tire = new THREE.Mesh(new THREE.CylinderGeometry(0.42, 0.42, 0.3, 14), new THREE.MeshLambertMaterial({ color: 0x222222 }));
+        tire.rotation.z = Math.PI / 2;
+        const hub = new THREE.Mesh(new THREE.BoxGeometry(0.34, 0.18, 0.18), new THREE.MeshLambertMaterial({ color: 0xBDC3C7 }));
+        pivot.add(tire, hub);
+        car.add(pivot);
+        wheels.push(pivot);
+    });
+    return { car, wheels };
 }
 
 // Called every frame from animate() while driving: makes the scenery rush past.
@@ -224,7 +236,11 @@ function updateCarRide() {
 function disposeTree(obj) {
     obj.traverse(o => {
         if (o.geometry) o.geometry.dispose();
-        if (o.material) (Array.isArray(o.material) ? o.material : [o.material]).forEach(m => m.dispose());
+        if (o.material) (Array.isArray(o.material) ? o.material : [o.material]).forEach(m => {
+            if (m.map) m.map.dispose();      // sign textures (store.js)
+            m.dispose();
+        });
+        if (o.isInstancedMesh) o.dispose();  // the store's crowd (store.js)
     });
 }
 

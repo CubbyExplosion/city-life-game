@@ -51,6 +51,7 @@ function interactWithNPC(npcData) {
     // Presents and the soccer ball have their own timing — no 3-second wait between clicks
     if (npcData.isGift) { openGift(npcData.giftId); return; }
     if (npcData.isBall) { kickBall(); return; }
+    if (npcData.isShelf) { playerGrabItem(npcData); return; }
 
     if (Date.now() < npcCooldown) return;
     npcCooldown = Date.now() + 3000;
@@ -83,7 +84,7 @@ function interactWithNPC(npcData) {
 
 function spawnRelative() {
     if (!scene) return;
-    if (inSchool || driving) return; // don't let relatives sneak into school (or into the car!)
+    if (inSchool || driving || inStore) return; // don't let relatives sneak into school (or into the car!)
     if (activeRelatives.length >= 2) return; // max 2 relatives at once
     const data = RELATIVE_DATA[Math.floor(Math.random() * RELATIVE_DATA.length)];
     const x = (Math.random() - 0.5) * 5;
@@ -157,7 +158,7 @@ function showBullyChoice(name) {
             <h2 style="color:#e74c3c; margin-bottom:14px;">😠 ${name} blocks your way</h2>
             <p style="color:#ddd; margin-bottom:22px;">"Give me your lunch money, or else!"</p>
             <div style="display:flex; flex-direction:column; gap:10px;">
-                <button class="action-btn" onclick="bullyChoice('standup')">😤 Stand up to them</button>
+                <button class="action-btn" onclick="bullyChoice('standup')">😤 Stand up to them (risky — you might get hurt!)</button>
                 <button class="action-btn" onclick="bullyChoice('walkaway')">🚶 Walk away</button>
                 <button class="action-btn" onclick="bullyChoice('teacher')">🙋 Tell the teacher</button>
             </div>
@@ -165,6 +166,19 @@ function showBullyChoice(name) {
     document.body.appendChild(overlay);
 }
 
+
+// A quick red flash around the edges of the screen when you get hurt.
+function flashHurt() {
+    const flash = document.createElement('div');
+    flash.style.cssText = `
+        position:fixed; inset:0; z-index:400; pointer-events:none;
+        box-shadow:inset 0 0 160px 60px rgba(231,76,60,0.85);
+        transition:opacity 0.9s ease-out; opacity:1;
+    `;
+    document.body.appendChild(flash);
+    requestAnimationFrame(() => requestAnimationFrame(() => { flash.style.opacity = '0'; }));
+    setTimeout(() => flash.remove(), 1100);
+}
 
 function bullyChoice(choice) {
     const overlay = document.getElementById('bully-overlay');
@@ -177,9 +191,20 @@ function bullyChoice(choice) {
             showEvent('💪', `You stood your ground! ${name} backed off. +5 happiness`);
             player.happiness = Math.min(100, player.happiness + 5);
         } else {
-            showEvent('😢', `${name} shoved you! -5 happiness, -3 health`);
+            // You got hurt! Standing up to a bully is brave, but it's risky.
+            const hurt = 8 + Math.floor(Math.random() * 8); // lose 8-15 health
+            const injury = ['a scraped knee 🩹', 'a bruised arm 🟣', 'a sore elbow 🤕'][Math.floor(Math.random() * 3)];
             player.happiness = Math.max(0, player.happiness - 5);
-            player.health = Math.max(0, player.health - 3);
+            player.health = Math.max(0, player.health - hurt);
+            flashHurt();
+            showEvent('💥', `Ouch! ${name} pushed you down and you got ${injury}! -${hurt} health, -5 happiness`);
+            if (player.health <= 25) { // badly hurt — the school nurse helps
+                setTimeout(() => {
+                    player.health = Math.min(100, player.health + 10);
+                    updateStats(); saveGame();
+                    showEvent('👩‍⚕️', "The school nurse patched you up! +10 health");
+                }, 2800);
+            }
         }
     } else if (choice === 'walkaway') {
         showEvent('🚶', `You walked away. ${name} lost interest. -2 happiness`);
@@ -198,7 +223,7 @@ function bullyChoice(choice) {
 // =============================================
 
 function maybeTriggerMissingPet() {
-    if (inSchool || driving || activePet) return;
+    if (inSchool || driving || inStore || activePet) return;
     if (Math.random() < 0.35) {
         setTimeout(() => spawnMissingPet(), 1200);
     }
@@ -206,7 +231,7 @@ function maybeTriggerMissingPet() {
 
 
 function spawnMissingPet() {
-    if (!scene || inSchool || driving || activePet) return;
+    if (!scene || inSchool || driving || inStore || activePet) return;
     const name = PET_NAMES[Math.floor(Math.random() * PET_NAMES.length)];
     const x = (Math.random() - 0.5) * 5;
     const z = (Math.random() - 0.5) * 5;
@@ -243,9 +268,9 @@ function foundMissingPet(npcData) {
 // =============================================
 
 function maybeTriggerFoundMoney() {
-    if (inSchool || driving) return;
+    if (inSchool || driving || inStore) return;
     if (Math.random() < 0.25) {
-        setTimeout(() => { if (!driving) showFoundMoney(); }, 1500);
+        setTimeout(() => { if (!driving && !inStore) showFoundMoney(); }, 1500);
     }
 }
 

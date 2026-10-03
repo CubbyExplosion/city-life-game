@@ -33,7 +33,7 @@ function announceWinter(silent) {
 // touches things when we're standing in the house scene, and it adds or
 // removes snow so it always matches isSnowing().
 function syncWeather() {
-    if (!scene || inSchool || driving) return; // the house is put away right now — we'll sync when we're back
+    if (!scene || inSchool || driving || inStore) return; // the house is put away right now — we'll sync when we're back
 
     if (isSnowing()) {
         scene.background = new THREE.Color(0xcfdcea);
@@ -75,16 +75,21 @@ function makeSnowPoints(count, width, height, depth) {
     return points;
 }
 
-// Called every frame from animate(): snowflakes drift down, then restart at the top.
+// Called every frame from animate() at home.
 function updateSnow() {
     if (!snowPoints || !snowPoints.parent) return;
-    const arr = snowPoints.geometry.attributes.position.array;
-    const top = snowPoints.userData.height;
+    animateSnowPoints(snowPoints);
+}
+
+// Snowflakes drift down, then restart at the top. (Also used for the snow in the store's parking lot.)
+function animateSnowPoints(points) {
+    const arr = points.geometry.attributes.position.array;
+    const top = points.userData.height;
     const sway = Date.now() * 0.001;
     for (let i = 0; i < arr.length; i += 3) {
         arr[i + 1] -= 0.04 + ((i / 3) % 5) * 0.008;      // fall (each flake at its own speed)
         arr[i]     += Math.sin(sway + i) * 0.004;        // drift side to side
         if (arr[i + 1] < 0) arr[i + 1] = top;            // back to the sky
     }
-    snowPoints.geometry.attributes.position.needsUpdate = true;
+    points.geometry.attributes.position.needsUpdate = true;
 }

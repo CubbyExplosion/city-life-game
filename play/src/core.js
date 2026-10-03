@@ -82,7 +82,7 @@ function setSpeed(n) {
 function startDayTimer() {
     if (dayTimerInterval) clearInterval(dayTimerInterval);
     dayTimerInterval = setInterval(() => {
-        if (driving) return; // the clock pauses during car rides (see endRide() in travel.js)
+        if (driving || inStore) return; // the clock pauses during car rides and store trips (they put it back when they end)
         const effectiveDayMs = DAY_MS / daySpeed;
         const remaining = effectiveDayMs - (Date.now() - lastDayTime);
         if (remaining <= 0) {
@@ -177,6 +177,23 @@ function updateActionPanel() {
     const seasonTag = isSnowing() ? '❄️ Snowing &nbsp;|&nbsp; ' : isWinter() ? '🎄 Winter &nbsp;|&nbsp; ' : '';
     const dayInfo = `${seasonTag}☀️ Day <strong>${player.sleepCount}/100</strong> &nbsp;|&nbsp; Next day in: <strong><span id="day-timer">--:--</span></strong> &nbsp;|&nbsp; ⏩ ${speedBtns}`;
 
+    // At the grocery store: show your cart, the crowd, and a button back to the car
+    if (inStore && store) {
+        const items = store.cart ? store.cart.items : [];
+        const total = items.reduce((sum, it) => sum + it.price, 0);
+        const hint = !store.cart
+            ? '🛒 Walk into a cart by the door to grab it!'
+            : items.length === 0
+                ? '🛒 Push your cart around — Mom &amp; Dad will add groceries, or click the shelves!'
+                : '💳 Push your cart to a CHECKOUT lane (left or right side) when you\'re ready!';
+        panel.innerHTML = `
+            <div style="color:#aaa;margin-bottom:4px">🛒 Cart: <strong>${items.length}</strong> items ($${total})
+                &nbsp;|&nbsp; 👥 <strong>${store.crowdCount}</strong> shoppers — ${crowdLabel(store.crowdCount)}</div>
+            <div style="color:#FFD700;margin-bottom:6px">${hint}</div>
+            <button class="action-btn" onclick="leaveStore(false)">🚗 Back to the car</button>`;
+        return;
+    }
+
     if (inSchool) {
         const isClassPd = [0, 2, 3, 5, 6].includes(schoolPeriod);
         const progress = isClassPd
@@ -270,6 +287,8 @@ function restartGame() {
     clearTimeout(recessTimer);
     driving = false;
     rideState = null;
+    inStore = false;
+    store = null;
     pickupInProgress = false;
     activeRelatives.length = 0;
     activeBully = null;
@@ -280,7 +299,7 @@ function restartGame() {
     // bully confrontation, a class/homework/homeschool/PE question, school choice,
     // a present being opened, the toy box, a car ride caption)
     ['money-overlay', 'bully-overlay', 'math-overlay', 'school-overlay',
-     'gift-overlay', 'toy-overlay', 'ride-overlay'].forEach(id => {
+     'gift-overlay', 'toy-overlay', 'ride-overlay', 'checkout-overlay'].forEach(id => {
         const el = document.getElementById(id);
         if (el) el.remove();
     });

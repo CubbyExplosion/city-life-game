@@ -34,7 +34,7 @@ function giftColorFor(gift) {
 // Rebuilds the tree, the presents and the toy rug. Safe to call any time —
 // it throws away the old ones first so nothing is ever doubled.
 function refreshHomeExtras() {
-    if (!scene || inSchool || driving) return;
+    if (!scene || inSchool || driving || inStore) return;
     homeExtras.forEach(obj => {
         scene.remove(obj);
         const i = clickableNPCs.indexOf(obj);
@@ -148,7 +148,7 @@ function buildToyDisplay() {
 
 // Called every frame from animate(): presents hop a little so you notice them.
 function animateHomeExtras() {
-    if (!homeExtras.length || inSchool || driving) return;
+    if (!homeExtras.length || inSchool || driving || inStore) return;
     const t = Date.now() * 0.004;
     homeExtras.forEach(obj => {
         if (obj.userData.npcData && obj.userData.npcData.isGift) {
@@ -262,7 +262,7 @@ function santaVisit(silent) {
 
 // Santa himself stops by for a few seconds (only if you're home to see him).
 function spawnSanta() {
-    if (!scene || inSchool || driving) return;
+    if (!scene || inSchool || driving || inStore) return;
     const santa = buildNPC(1.8, -2.4, 0xC0392B, 0xFFFFFF, {
         name: 'Santa', dialogue: 'Ho ho ho! Merry Christmas! 🎅', happiness: 10
     });

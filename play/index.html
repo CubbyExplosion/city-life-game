@@ -92,6 +92,14 @@
                 <p>You can't go anywhere on your own — <strong>Mom or Dad drives you</strong> to school (and home again),
                 to the store, and to the hospital. Press <strong>Skip</strong> if you don't want to watch the whole ride.</p>
 
+                <h3>🛒 The Grocery Store</h3>
+                <p>Press <strong>Go Shopping</strong> and you'll arrive in the store's parking lot. <strong>Walk out of the car</strong>,
+                go through the door, and walk into a 🛒 cart to grab it. Push it around with the arrow keys / WASD.
+                Mom and Dad will put groceries in the cart now and then — you can <strong>click the shelves</strong> to add things too.
+                The store can have anywhere from <strong>10 to 1000 shoppers</strong> (a big crowd slows you down!).
+                When your cart has food in it, push it to a <strong>CHECKOUT</strong> lane on the left or right side.
+                If you've been getting <strong>good grades</strong> at school, the cashier gives you a <strong>lollipop 🍭</strong>!</p>
+
                 <h3>🌳 Recess</h3>
                 <p>The last part of every school day is <strong>recess outside</strong> on the sunny grass field. Walk around,
                 click the soccer ball to kick it, and chat with your classmates. Recess ends after a little while,
@@ -170,33 +178,22 @@
         </div>
     </div>
 
-    <!-- TODDLER SHOPPING MINI GAME -->
-    <div id="shopping-overlay" class="hidden">
-        <div id="shopping-box">
-            <h2>🛍️ Shopping Trip</h2>
-            <div id="shop-list"></div>
-            <div id="shop-cart">🛒 Cart: (empty)</div>
-            <div id="shop-items"></div>
-            <div id="shop-message"></div>
-            <div id="shop-checkout-section"></div>
-            <button class="action-btn" onclick="closeShopping()" style="margin-top:10px">✖ Close</button>
-        </div>
-    </div>
-
     <script src="https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.min.js"></script>
-    <script src="src/data.js?v=2"></script>
-    <script src="src/state.js?v=2"></script>
-    <script src="src/world.js?v=2"></script>
-    <script src="src/homelife.js?v=2"></script>
-    <script src="src/events.js?v=2"></script>
-    <script src="src/minigames.js?v=2"></script>
-    <script src="src/travel.js?v=2"></script>
-    <script src="src/seasons.js?v=2"></script>
-    <script src="src/gifts.js?v=2"></script>
-    <script src="src/school.js?v=2"></script>
-    <script src="src/chat.js?v=2"></script>
-    <script src="src/core.js?v=2"></script>
-    <script src="src/main.js?v=2"></script>
+    <script src="src/data.js?v=3"></script>
+    <script src="src/state.js?v=3"></script>
+    <script src="src/world.js?v=3"></script>
+    <script src="src/homelife.js?v=3"></script>
+    <script src="src/events.js?v=3"></script>
+    <script src="src/minigames.js?v=3"></script>
+    <script src="src/travel.js?v=3"></script>
+    <script src="src/store.js?v=3"></script>
+    <script src="src/seasons.js?v=3"></script>
+    <script src="src/gifts.js?v=3"></script>
+    <script src="src/school.js?v=3"></script>
+    <script src="src/suin-brain.js?v=3"></script>
+    <script src="src/chat.js?v=3"></script>
+    <script src="src/core.js?v=3"></script>
+    <script src="src/main.js?v=3"></script>
     <script>
         if ('serviceWorker' in navigator) {
             window.addEventListener('load', () => navigator.serviceWorker.register('sw.js'));

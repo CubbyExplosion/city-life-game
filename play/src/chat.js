@@ -31,8 +31,111 @@ async function askGemini(name, userMsg) {
     return data.candidates[0].content.parts[0].text;
 }
 
+// =============================================
+// HOW CLASSMATES ANSWER YOU — this uses SUIN's brain (your chatbot!).
+// suin-brain.js has Suin's real math calculator, its "what does X mean"
+// lookup, and its conversation examples; suin-words.js is Suin's list of
+// 4,800+ word definitions (loaded the first time you open a chat).
+// The order a classmate thinks in:
+//   1. who they are / their age / rude words   (their own personality)
+//   2. real math ("what is 7 times 8")          (Suin)
+//   3. "what does X mean"                       (Suin)
+//   4. longer friendly phrases ("how are you")  (Suin)
+//   5. their own favorite topics (football, drawing...) and everyday words
+//   6. if nothing matches, a funny "huh?" reply
+// =============================================
+
+// Suin's big word list loads only when you first talk to a classmate.
+let suinWordsRequested = false;
+function ensureSuinWords() {
+    if (suinWordsRequested || typeof WORD_DEFINITIONS !== 'undefined') return;
+    suinWordsRequested = true;
+    const tag = document.createElement('script');
+    tag.src = 'src/suin-words.js?v=3';
+    document.head.appendChild(tag);
+}
+
+// Kids type fast: "who r u" should mean "who are you".
+function normalizeKidSpeak(text) {
+    return text.toLowerCase()
+        .replace(/\bwats\b|\bwhats\b/g, "what's")
+        .replace(/\bwat\b|\bwut\b/g, 'what')
+        .replace(/\bur\b/g, 'your')
+        .replace(/\bu\b/g, 'you')
+        .replace(/\br\b/g, 'are')
+        .replace(/\bpls\b|\bplz\b/g, 'please')
+        .replace(/\bthx\b|\bty\b/g, 'thanks');
+}
+
+// Is this keyword in the message as a whole word? ("yo" won't match "you", "hate" won't match "whatever")
+function friendWordMatch(text, word) {
+    return new RegExp('\\b' + word.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '\\b').test(text);
+}
+
+// Suin's way of matching: count the words you typed that an example also has. Only the longer
+// phrases count here ("good afternoon", "how are you doing") — one-word things like "hi" or "bye"
+// stay with each classmate's own personality answers.
+function suinPhraseReply(text) {
+    const typed = suinWordsOf(text);
+    let best = null, bestScore = 0;
+    SEED_EXAMPLES.concat(GREETING_EXAMPLES, MOOD_EXAMPLES).forEach(example => {
+        const words = suinWordsOf(example.text);
+        if (words.length < 2) return;
+        const score = suinOverlapScore(typed, words);
+        if (score >= 2 && score > bestScore) { bestScore = score; best = example; }
+    });
+    return best ? best.reply : null;
+}
+
+function getClassmateResponse(name, msg) {
+    const data = FRIEND_RESPONSES[name];
+    if (!data) return '...';
+    const pick = list => list[Math.floor(Math.random() * list.length)];
+    const text = normalizeKidSpeak(msg);
+    const findKey = keys => keys.find(entry => entry.words.some(w => friendWordMatch(text, w)));
+
+    // 1. Who they are, how old, rude words — the first 3 entries of every classmate's table (data.js)
+    const own = findKey(data.keys.slice(0, 3));
+    if (own) return pick(own.says);
+
+    // 2. Real math, the way Suin does it
+    const expr = extractMathExpression(text);
+    if (expr) {
+        let result;
+        try { result = evalMathExpression(expr); } catch (e) { result = NaN; }
+        if (Number.isFinite(result)) {
+            const rounded = Math.round(result * 1e9) / 1e9;
+            return pick(['Easy! ', 'Math time! ', 'Ooh, I know this one! ', '']) + '🧮 ' + expr + ' = ' + rounded;
+        }
+        return "Hmm, that math didn't work out — try something like \"5 + 3\" or \"12 * 4\" 🧮";
+    }
+
+    // 3. "what does ___ mean" — Suin's word list
+    const asked = extractDefinitionQuery(text);
+    if (asked) {
+        if (typeof WORD_DEFINITIONS !== 'undefined' && WORD_DEFINITIONS[asked]) {
+            return '"' + asked + '" means: ' + WORD_DEFINITIONS[asked];
+        }
+        return typeof WORD_DEFINITIONS === 'undefined'
+            ? 'Hmm, let me think... ask me again in a second! 🤔'
+            : "I don't know that word yet! 🤷";
+    }
+
+    // 4. Suin's longer friendly phrases
+    const suinSays = suinPhraseReply(text);
+    if (suinSays) return suinSays;
+
+    // 5. This classmate's own favorite topics and everyday words
+    const mine = findKey(data.keys.slice(3));
+    if (mine) return pick(mine.says);
+
+    // 6. No idea what that was
+    return pick(data.defaults);
+}
+
 function showClassmateChat(name) {
     if (document.getElementById('chat-overlay')) return;
+    ensureSuinWords(); // start loading Suin's word list so "what does ___ mean" works
     activeChatName = name;
 
     const overlay = document.createElement('div');

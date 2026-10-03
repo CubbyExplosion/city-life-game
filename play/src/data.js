@@ -489,19 +489,33 @@ const FRIEND_RESPONSES = {
 };
 
 
-function getClassmateResponse(name, msg) {
-    const data = FRIEND_RESPONSES[name];
-    if (!data) return "...";
-    const m = msg.toLowerCase();
-    for (const entry of data.keys) {
-        // Use word boundaries so "yo" won't match "you", "hate" won't match "whatever", etc.
-        if (entry.words.some(w => new RegExp('\\b' + w.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '\\b').test(m))) {
-            const replies = entry.says;
-            return replies[Math.floor(Math.random() * replies.length)];
-        }
-    }
-    return data.defaults[Math.floor(Math.random() * data.defaults.length)];
-}
+// How each classmate introduces themselves ("who are you?")
+const CLASSMATE_INTROS = {
+    Jake:    "I'm Jake! I love football and video games ⚽🎮",
+    Mia:     "I'm Mia! I love drawing and animals 🎨🐼",
+    Sam:     "I'm Sam! I love racing and gaming 🏃🎮",
+    Ella:    "I'm Ella! I love books and science 📚🔬",
+    Noah:    "I'm Noah! I play guitar and love music 🎸",
+    Priya:   "I'm Priya! I love skateboarding and adventures 🛹",
+    Theo:    "I'm Theo! I love chess and puzzles ♟️",
+    Zara:    "I'm Zara! I love dancing 💃",
+    Deshawn: "I'm Deshawn! I love jokes and making people laugh 😂"
+};
+
+// Things every classmate can answer, no matter their personality. They go FIRST in each
+// classmate's list so they're checked before the general words (like "what" or "you").
+Object.keys(FRIEND_RESPONSES).forEach(name => {
+    FRIEND_RESPONSES[name].keys.unshift(
+        { words:['who are you','who is this','your name','what is your name'],
+          says:[CLASSMATE_INTROS[name] + ' What about you?', 'It\'s me, ' + name + '! We\'re in the same class, remember? 😄', CLASSMATE_INTROS[name] + ' — and we\'re friends! 💙'] },
+        { words:['how old are you','your age'],
+          says:['We\'re in the same class, so about the same age as you! 😄', 'Old enough to be in your class! 😂', 'Same as you, I think! 😊'] },
+        { words:['shut up','shutup','stupid','dumb','idiot','ugly'],
+          says:['Hey, that\'s not nice! 😢 We\'re friends, right?', 'Ouch, that hurt my feelings... 😔 Can we be kind to each other?', 'Please don\'t say that — I thought we were friends! 💙'] }
+    );
+});
+
+// (getClassmateResponse — the code that reads these tables — lives in chat.js and uses SAI's matcher)
 
 // Home positions for parents (on the couch)
 
@@ -519,14 +533,23 @@ const RECIPES = [
 
 const ALL_INGS = ['🥕','🧅','🥦','🍗','🧄','🍞','🧈','🍅','🫑','🧀'];
 
-const SHOPPING_LISTS = [
-    { name: 'Snack Run',      steps: ['🍎','🥛','🍞'], reward: { happiness: 5  } },
-    { name: 'Toy Store Trip', steps: ['🧸','🎈','🚗'], reward: { happiness: 8  } },
-    { name: 'Fruit Stand',    steps: ['🍌','🍇','🍓'], reward: { happiness: 6  } },
-    { name: 'Baby Aisle',     steps: ['🧷','🧴','🧦'], reward: { happiness: 4  } },
+// Groceries in the store (each shelf section sells one of these; parents put them in the cart)
+const GROCERY_ITEMS = [
+    { name: 'Milk',      emoji: '🥛', price: 4, color: 0xFFFFFF },
+    { name: 'Bread',     emoji: '🍞', price: 3, color: 0xD2A679 },
+    { name: 'Apples',    emoji: '🍎', price: 5, color: 0xE74C3C },
+    { name: 'Bananas',   emoji: '🍌', price: 3, color: 0xF1C40F },
+    { name: 'Cereal',    emoji: '🥣', price: 5, color: 0xF39C12 },
+    { name: 'Eggs',      emoji: '🥚', price: 4, color: 0xF5E6C8 },
+    { name: 'Cheese',    emoji: '🧀', price: 5, color: 0xF7DC6F },
+    { name: 'Carrots',   emoji: '🥕', price: 2, color: 0xE67E22 },
+    { name: 'Pizza',     emoji: '🍕', price: 7, color: 0xE59866 },
+    { name: 'Juice',     emoji: '🧃', price: 3, color: 0x58D68D },
+    { name: 'Cookies',   emoji: '🍪', price: 4, color: 0xA0522D },
+    { name: 'Chicken',   emoji: '🍗', price: 8, color: 0xD98880 },
 ];
 
-const ALL_SHOP_ITEMS = ['🍎','🥛','🍞','🧸','🎈','🚗','🍌','🍇','🍓','🧷','🧴','🧦','📚','🎨'];
+const GOOD_GRADES_EDU = 60; // education score needed for a "B" or better — good grades earn a lollipop at checkout
 
 const NAMES = {
     girl: ['Lilly', 'Jane', 'Maya', 'Preanka', 'Emily',

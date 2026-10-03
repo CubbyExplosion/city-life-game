@@ -1,9 +1,11 @@
-const CACHE_NAME = 'city-life-v4';
+const CACHE_NAME = 'city-life-v5';
+// (src/suin-words.js is ~260 KB and only loads when you first open a classmate chat, so it isn't
+// downloaded up front — it gets cached the first time it's used.)
 const ASSETS = [
     './', './index.html', './style.css', './manifest.json',
     './src/data.js', './src/state.js', './src/world.js', './src/homelife.js', './src/events.js',
-    './src/minigames.js', './src/travel.js', './src/seasons.js', './src/gifts.js',
-    './src/school.js', './src/chat.js', './src/core.js', './src/main.js'
+    './src/minigames.js', './src/travel.js', './src/store.js', './src/seasons.js', './src/gifts.js',
+    './src/school.js', './src/suin-brain.js', './src/chat.js', './src/core.js', './src/main.js'
 ];
 
 self.addEventListener('install', (event) => {
