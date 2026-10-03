@@ -550,7 +550,49 @@ const SUBJECT_BY_PERIOD = { 0: 'Math', 2: 'Reading', 3: 'Science', 5: 'Art', 6: 
 
 const SUBJECT_EMOJI = { Math: '📐', Reading: '📖', Science: '🔬', Art: '🎨', PE: '🏃' };
 
-const PERIOD_LABELS = ['📐 Math','🍎 Snack','📖 Reading','🔬 Science','🍽️ Lunch','🎨 Art','🏃 PE','🏠 Done!'];
+const PERIOD_LABELS = ['📐 Math','🍎 Snack','📖 Reading','🔬 Science','🍽️ Lunch','🎨 Art','🏃 PE','🌳 Recess','🏠 Done!'];
+
+const RECESS_MS = 25000; // recess lasts 25 real seconds (or until you press Go Home)
+
+// ---- Seasons: every 100-day year ends with winter ----
+const WINTER_START_DAY = 85;   // days 85-99 are winter (Christmas tree goes up)
+const CHRISTMAS_DAY = 99;      // Santa visits on the last day of the year
+const SNOW_YEAR_CHANCE = 0.4;  // some years it snows all winter — and snow means NO SCHOOL
+const MAX_PENDING_GIFTS = 10;  // unopened presents never pile up past this
+
+// ---- Toys: what's inside the presents ----
+// minAge: youngest age that can get it | play: happiness for playing with it
+// santa: true = a special toy only Santa brings | shape/color: how it looks in the room
+const TOY_DATA = [
+    // baby toys
+    { id:'rattle',  name:'Jingle Rattle',   emoji:'🔔', minAge:1, play:3, shape:'ball', color:0xF1C40F },
+    { id:'blocks',  name:'Stacking Blocks', emoji:'🧱', minAge:1, play:3, shape:'box',  color:0xE74C3C },
+    { id:'duck',    name:'Squeaky Duck',    emoji:'🦆', minAge:1, play:3, shape:'ball', color:0xFFD93D },
+    { id:'teddy',   name:'Teddy Bear',      emoji:'🧸', minAge:1, play:4, shape:'tall', color:0x8B5A2B },
+    // toddler toys
+    { id:'car',     name:'Toy Car',         emoji:'🚗', minAge:3, play:4, shape:'box',  color:0xC0392B },
+    { id:'train',   name:'Toy Train',       emoji:'🚂', minAge:3, play:5, shape:'box',  color:0x2E86C1 },
+    { id:'ball',    name:'Soccer Ball',     emoji:'⚽', minAge:3, play:4, shape:'ball', color:0xFFFFFF },
+    { id:'paints',  name:'Paint Set',       emoji:'🎨', minAge:3, play:5, shape:'box',  color:0x8E44AD },
+    { id:'puzzle',  name:'Jigsaw Puzzle',   emoji:'🧩', minAge:3, play:5, shape:'box',  color:0x27AE60 },
+    { id:'puppy',   name:'Plush Puppy',     emoji:'🐶', minAge:3, play:4, shape:'ball', color:0xD2B48C },
+    // kid toys
+    { id:'robot',   name:'Robot',           emoji:'🤖', minAge:5, play:6, shape:'tall', color:0xBDC3C7 },
+    { id:'kite',    name:'Kite',            emoji:'🪁', minAge:5, play:5, shape:'tall', color:0xE67E22 },
+    { id:'yoyo',    name:'Yo-Yo',           emoji:'🪀', minAge:5, play:4, shape:'ball', color:0xE74C3C },
+    { id:'dino',    name:'Dinosaur',        emoji:'🦖', minAge:5, play:6, shape:'tall', color:0x2ECC71 },
+    { id:'skate',   name:'Mini Skateboard', emoji:'🛹', minAge:5, play:6, shape:'box',  color:0x3498DB },
+    { id:'hoops',   name:'Basketball',      emoji:'🏀', minAge:5, play:5, shape:'ball', color:0xE67E22 },
+    { id:'scope',   name:'Telescope',       emoji:'🔭', minAge:5, play:6, shape:'tall', color:0x7F8C8D },
+    { id:'game',    name:'Board Game',      emoji:'🎲', minAge:5, play:5, shape:'box',  color:0xECF0F1 },
+    // special Santa-only toys
+    { id:'sled',    name:'Sled',            emoji:'🛷', minAge:3, play:10, shape:'box',  color:0xCB4335, santa:true },
+    { id:'console', name:'Game Console',    emoji:'🎮', minAge:5, play:12, shape:'box',  color:0x2C3E50, santa:true },
+    { id:'heli',    name:'RC Helicopter',   emoji:'🚁', minAge:5, play:10, shape:'tall', color:0x2980B9, santa:true },
+    { id:'unicorn', name:'Unicorn Plush',   emoji:'🦄', minAge:3, play:10, shape:'tall', color:0xF5B7F0, santa:true },
+    { id:'rocket',  name:'Rocket Ship',     emoji:'🚀', minAge:5, play:10, shape:'tall', color:0xF8F9F9, santa:true },
+    { id:'globe',   name:'Snow Globe',      emoji:'🔮', minAge:3, play:8,  shape:'ball', color:0xAED6F1, santa:true },
+];
 
 
 const CITY_THEMES = {

@@ -38,6 +38,8 @@ function startGame(gender) {
     player.happiness = 50; player.health = 100; player.education = 0;
     player.city = 'Maple Grove'; player.lastMoveAge = 0; player.homework = null;
     player.parentTemperament = Math.random() < 0.5 ? 'strict' : 'calm';
+    player.toys = []; player.gifts = [];
+    rollSnowYear();
     birthdayMessage = '';
     lastDayTime = Date.now();
     saveGame();
@@ -56,6 +58,7 @@ function launchGame() {
     initThreeJS();
     catchUpDays();
     startDayTimer();
+    refreshHomeExtras(); // winter decorations, presents and toys already waiting at home
     setInterval(parentCheckOnBaby, 20000);
     // Parents wander freely every 5 seconds
     setInterval(() => {
@@ -79,6 +82,7 @@ function setSpeed(n) {
 function startDayTimer() {
     if (dayTimerInterval) clearInterval(dayTimerInterval);
     dayTimerInterval = setInterval(() => {
+        if (driving) return; // the clock pauses during car rides (see endRide() in travel.js)
         const effectiveDayMs = DAY_MS / daySpeed;
         const remaining = effectiveDayMs - (Date.now() - lastDayTime);
         if (remaining <= 0) {
@@ -108,11 +112,14 @@ function catchUpDays() {
 function advanceOneDay(silent) {
     birthdayMessage = '';
     player.sleepCount += 1;
+    let extrasDirty = false; // did the house need new decorations/presents/snow today?
 
     if (player.sleepCount >= 100) {
         player.sleepCount = 0;
         player.age += 1;
         player.health = Math.max(0, player.health - 1);
+        rollSnowYear();       // a brand-new year: will this winter have snow?
+        extrasDirty = true;   // winter is over — the tree and snow come down
 
         if (!silent && scene) buildPlayerMesh(); // update appearance for new age
 
@@ -127,12 +134,17 @@ function advanceOneDay(silent) {
             player.happiness = Math.min(100, player.happiness + 10);
             if (!silent) birthdayMessage += '🎂 You got a cake! +10 happiness  ';
         }
+        if (giveGift('birthday') && !silent) birthdayMessage += '🎁 A birthday present is waiting for you!  ';
         if (player.age === 5 && !silent) {
             setTimeout(() => showSchoolChoice(), 1500);
         }
         if (!silent) birthdayMessage = `🎉 ${player.name} turned ${player.age} today! ` + birthdayMessage;
         if (!silent) maybeTriggerCityMove();
     }
+
+    // Winter: starts on day 85 (tree goes up), Santa comes on the last day of the year
+    if (player.sleepCount === WINTER_START_DAY) { announceWinter(silent); extrasDirty = true; }
+    if (player.sleepCount === CHRISTMAS_DAY)    { santaVisit(silent);     extrasDirty = true; }
 
     // Every 3 days, a relative might visit
     if (!silent && !inSchool && player.sleepCount % 3 === 0 && Math.random() < 0.7) {
@@ -149,7 +161,10 @@ function advanceOneDay(silent) {
         maybeTriggerFoundMoney();
     }
 
-    if (!silent) { updateStats(); updateActionPanel(); }
+    if (!silent) {
+        if (extrasDirty) refreshHomeExtras();
+        updateStats(); updateActionPanel();
+    }
 }
 
 // ---- Action Panel ----
@@ -159,7 +174,8 @@ function updateActionPanel() {
     const speedBtns = [1, 2, 5, 10, 15, 20].map(n =>
         `<button class="speed-btn${daySpeed === n ? ' speed-active' : ''}" onclick="setSpeed(${n})">${n}x</button>`
     ).join('');
-    const dayInfo = `☀️ Day <strong>${player.sleepCount}/100</strong> &nbsp;|&nbsp; Next day in: <strong><span id="day-timer">--:--</span></strong> &nbsp;|&nbsp; ⏩ ${speedBtns}`;
+    const seasonTag = isSnowing() ? '❄️ Snowing &nbsp;|&nbsp; ' : isWinter() ? '🎄 Winter &nbsp;|&nbsp; ' : '';
+    const dayInfo = `${seasonTag}☀️ Day <strong>${player.sleepCount}/100</strong> &nbsp;|&nbsp; Next day in: <strong><span id="day-timer">--:--</span></strong> &nbsp;|&nbsp; ⏩ ${speedBtns}`;
 
     if (inSchool) {
         const isClassPd = [0, 2, 3, 5, 6].includes(schoolPeriod);
@@ -176,16 +192,24 @@ function updateActionPanel() {
         ? `<p style="color:#FFD700;margin-bottom:4px">${birthdayMessage}</p>` : '';
 
     const cookBtn = `<button class="action-btn" onclick="openMiniGame()">🍳 Cook</button>`;
+    const toyCount = (player.toys || []).length;
+    const toyBtn = toyCount > 0
+        ? `<button class="action-btn" onclick="showToyBox()">🧸 Toys (${toyCount})</button>`
+        : '';
 
     if (player.age <= 2) {
         panel.innerHTML = `${bMsg}
             <div style="color:#aaa;margin-bottom:6px">${dayInfo}</div>
             <button class="action-btn" onclick="cry('milk')">😭 Cry for Milk</button>
-            <button class="action-btn" onclick="cry('diaper')">😭 Cry for Diaper</button>`;
+            <button class="action-btn" onclick="cry('diaper')">😭 Cry for Diaper</button>
+            ${toyBtn}`;
     } else {
         const schoolLabel = player.school === 'SIP' ? 'SIP' : player.school === 'Homeschool' ? 'Homeschool' : 'Ohlor';
+        // Snow day: the study button turns into a "no school" sign
         const studyBtn = player.age >= 5 && player.school
-            ? `<button class="action-btn" onclick="study()">📚 Study (${schoolLabel})</button>`
+            ? (isSnowing()
+                ? `<button class="action-btn" onclick="study()" style="opacity:0.7">❄️ Snow day — no school!</button>`
+                : `<button class="action-btn" onclick="study()">📚 Study (${schoolLabel})</button>`)
             : '';
         const homeworkBtn = player.homework
             ? `<button class="action-btn" onclick="doHomework()">📝 Homework (${player.homework})</button>`
@@ -195,7 +219,7 @@ function updateActionPanel() {
             : '';
         panel.innerHTML = `${bMsg}
             <div style="color:#aaa;margin-bottom:6px">⬆️⬇️⬅️➡️ to walk &nbsp;|&nbsp; ${dayInfo}</div>
-            ${cookBtn} ${shopBtn} ${studyBtn} ${homeworkBtn}`;
+            ${cookBtn} ${shopBtn} ${toyBtn} ${studyBtn} ${homeworkBtn}`;
     }
 }
 
@@ -239,16 +263,24 @@ function restartGame() {
     player.education = 0; player.gender = null; player.school = null;
     player.city = 'Maple Grove'; player.lastMoveAge = 0; player.homework = null;
     player.parentTemperament = 'calm';
+    player.snowYear = false; player.toys = []; player.gifts = [];
     birthdayMessage = '';
     inSchool = false;
+    inField = false;
+    clearTimeout(recessTimer);
+    driving = false;
+    rideState = null;
+    pickupInProgress = false;
     activeRelatives.length = 0;
     activeBully = null;
     activePet = null;
     homeschoolSubjectIndex = 0;
     currentQuestion = null;
     // Remove any dynamically-created popup that might still be open (found money,
-    // bully confrontation, a class/homework/homeschool/PE question, school choice)
-    ['money-overlay', 'bully-overlay', 'math-overlay', 'school-overlay'].forEach(id => {
+    // bully confrontation, a class/homework/homeschool/PE question, school choice,
+    // a present being opened, the toy box, a car ride caption)
+    ['money-overlay', 'bully-overlay', 'math-overlay', 'school-overlay',
+     'gift-overlay', 'toy-overlay', 'ride-overlay'].forEach(id => {
         const el = document.getElementById(id);
         if (el) el.remove();
     });

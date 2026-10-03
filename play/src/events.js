@@ -48,6 +48,10 @@ function relativesAttackParents() {
 
 
 function interactWithNPC(npcData) {
+    // Presents and the soccer ball have their own timing — no 3-second wait between clicks
+    if (npcData.isGift) { openGift(npcData.giftId); return; }
+    if (npcData.isBall) { kickBall(); return; }
+
     if (Date.now() < npcCooldown) return;
     npcCooldown = Date.now() + 3000;
     if (npcData.isBully) {
@@ -60,6 +64,10 @@ function interactWithNPC(npcData) {
     }
     if (npcData.isSchoolNPC) {
         if (npcData.npcType === 'teacher') {
+            if (schoolPeriod >= 7) { // recess / end of day — no quizzes, just say hi
+                showEvent('🧑‍🏫', `${npcData.name}: "Enjoy your recess!"`);
+                return;
+            }
             askMathQuestion(npcData.name);
         } else {
             showClassmateChat(npcData.name);
@@ -75,7 +83,7 @@ function interactWithNPC(npcData) {
 
 function spawnRelative() {
     if (!scene) return;
-    if (inSchool) return; // don't let relatives sneak into school
+    if (inSchool || driving) return; // don't let relatives sneak into school (or into the car!)
     if (activeRelatives.length >= 2) return; // max 2 relatives at once
     const data = RELATIVE_DATA[Math.floor(Math.random() * RELATIVE_DATA.length)];
     const x = (Math.random() - 0.5) * 5;
@@ -190,7 +198,7 @@ function bullyChoice(choice) {
 // =============================================
 
 function maybeTriggerMissingPet() {
-    if (inSchool || activePet) return;
+    if (inSchool || driving || activePet) return;
     if (Math.random() < 0.35) {
         setTimeout(() => spawnMissingPet(), 1200);
     }
@@ -198,7 +206,7 @@ function maybeTriggerMissingPet() {
 
 
 function spawnMissingPet() {
-    if (!scene || inSchool || activePet) return;
+    if (!scene || inSchool || driving || activePet) return;
     const name = PET_NAMES[Math.floor(Math.random() * PET_NAMES.length)];
     const x = (Math.random() - 0.5) * 5;
     const z = (Math.random() - 0.5) * 5;
@@ -235,9 +243,9 @@ function foundMissingPet(npcData) {
 // =============================================
 
 function maybeTriggerFoundMoney() {
-    if (inSchool) return;
+    if (inSchool || driving) return;
     if (Math.random() < 0.25) {
-        setTimeout(() => showFoundMoney(), 1500);
+        setTimeout(() => { if (!driving) showFoundMoney(); }, 1500);
     }
 }
 
@@ -311,11 +319,15 @@ function triggerCityMove() {
 
         setTimeout(() => {
             if (inSchool) return;
-            player.city = newCity.city;
-            player.lastMoveAge = player.age;
-            showEvent('🏙️', `Welcome to ${newCity.city}! Time to meet new classmates at school.`);
-            updateStats();
-            saveGame();
+            // The family drives to the new city (a longer car ride), then you arrive
+            function arrive() {
+                player.city = newCity.city;
+                player.lastMoveAge = player.age;
+                showEvent('🏙️', `Welcome to ${newCity.city}! Time to meet new classmates at school.`);
+                updateStats();
+                saveGame();
+            }
+            if (!driveTo(`to ${newCity.city}`, '🚚', arrive, { duration: 5500 })) arrive();
         }, 3000);
     }, 2500);
 }

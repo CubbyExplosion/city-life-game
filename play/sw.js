@@ -1,8 +1,9 @@
-const CACHE_NAME = 'city-life-v3';
+const CACHE_NAME = 'city-life-v4';
 const ASSETS = [
     './', './index.html', './style.css', './manifest.json',
     './src/data.js', './src/state.js', './src/world.js', './src/homelife.js', './src/events.js',
-    './src/minigames.js', './src/school.js', './src/chat.js', './src/core.js', './src/main.js'
+    './src/minigames.js', './src/travel.js', './src/seasons.js', './src/gifts.js',
+    './src/school.js', './src/chat.js', './src/core.js', './src/main.js'
 ];
 
 self.addEventListener('install', (event) => {

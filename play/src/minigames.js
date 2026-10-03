@@ -91,7 +91,13 @@ function closeMiniGame() {
 // TODDLER SHOPPING MINI GAME
 // =============================================
 
+// You can't walk to the store — a parent drives you there (and back home).
 function openShopping() {
+    if (driving) return;
+    if (!driveTo('to the store', '🛍️', openShoppingOverlay)) openShoppingOverlay();
+}
+
+function openShoppingOverlay() {
     shop.list = SHOPPING_LISTS[Math.floor(Math.random() * SHOPPING_LISTS.length)];
     shop.added = [];
     if (shop.checkoutInterval) clearInterval(shop.checkoutInterval);
@@ -173,6 +179,9 @@ function finishShopping() {
 
 function closeShopping() {
     if (shop.checkoutInterval) clearInterval(shop.checkoutInterval);
-    document.getElementById('shopping-overlay').classList.add('hidden');
+    const overlay = document.getElementById('shopping-overlay');
+    const wasOpen = !overlay.classList.contains('hidden');
+    overlay.classList.add('hidden');
+    if (wasOpen) driveTo('home', '🏠', null, { duration: 3200 }); // drive back home
 }
 

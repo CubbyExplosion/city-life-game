@@ -20,7 +20,10 @@ const player = {
     city: 'Maple Grove',
     lastMoveAge: 0,
     homework: null,
-    parentTemperament: 'calm' // 'calm' or 'strict' — rolled fresh in startGame(), not shown to the player
+    parentTemperament: 'calm', // 'calm' or 'strict' — rolled fresh in startGame(), not shown to the player
+    snowYear: false,           // does this year's winter have snow? (rolled every new year — snow closes school)
+    toys: [],                  // ids of the toys you own (see TOY_DATA in data.js)
+    gifts: []                  // wrapped presents waiting to be opened: { id, kind: 'birthday' | 'santa' }
 };
 
 let birthdayMessage = '';
@@ -70,9 +73,25 @@ let schoolObjects = [];
 let schoolNPCList = [];
 let teacherApproachState = 'wandering';
 let nextApproachTime = 0;
-let schoolPeriod = 0;        // 0=class1, 1=snack, 2=class2, 3=class3, 4=lunch, 5=class4, 6=PE, 7=done
+let schoolPeriod = 0;        // 0=Math, 1=snack, 2=Reading, 3=Science, 4=lunch, 5=Art, 6=PE, 7=recess, 8=done
 let correctThisPeriod = 0;
 let currentQuestion = null;
+
+// School field (recess happens outside on the grass)
+let inField = false;
+let recessTimer = null;
+let fieldBall = null;        // the soccer ball you can kick at recess
+
+// Car rides (see travel.js)
+let driving = false;         // true while a car ride is playing — the day timer pauses
+let rideState = null;        // everything about the ride in progress
+let pickupInProgress = false;// a parent is already walking over to take you home from school
+
+// Seasons / gifts (see seasons.js and gifts.js)
+let snowPoints = null;       // the falling-snow particles (only exist while it's snowing)
+let snowGround = null;       // the white ground around the house
+let homeExtras = [];         // Christmas tree, gift boxes and toy display — rebuilt by refreshHomeExtras()
+let toyPlayedAt = {};        // toy id -> last time you played with it (cooldown, not saved)
 
 // PE challenge state
 let peChallenge = null;

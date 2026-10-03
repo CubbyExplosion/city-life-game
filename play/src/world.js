@@ -11,6 +11,9 @@ function initThreeJS() {
     const container = document.getElementById('three-container');
     scene = new THREE.Scene();
     scene.background = new THREE.Color(0x87ceeb);
+    // Fresh scene = forget everything that belonged to the old one
+    snowPoints = null; snowGround = null; homeExtras = [];
+    driving = false; rideState = null; inField = false; fieldBall = null; pickupInProgress = false;
 
     camera = new THREE.PerspectiveCamera(60, container.clientWidth / container.clientHeight, 0.1, 100);
     camera.position.set(0, 7, 7);
@@ -293,14 +296,21 @@ function addBox(w, h, d, x, y, z, color) {
 function animate() {
     animationId = requestAnimationFrame(animate);
 
+    // During a car ride the whole screen belongs to the ride scene (travel.js)
+    if (driving) { updateCarRide(); return; }
+
     if (player.age >= 3) {
         const speed = 0.06;
         if (keys['ArrowUp']    || keys['w'] || keys['W']) playerMesh.position.z -= speed;
         if (keys['ArrowDown']  || keys['s'] || keys['S']) playerMesh.position.z += speed;
         if (keys['ArrowLeft']  || keys['a'] || keys['A']) playerMesh.position.x -= speed;
         if (keys['ArrowRight'] || keys['d'] || keys['D']) playerMesh.position.x += speed;
-        playerMesh.position.x = Math.max(-4.5, Math.min(4.5, playerMesh.position.x));
-        playerMesh.position.z = Math.max(-4.5, Math.min(4.5, playerMesh.position.z));
+        // The schoolyard is much bigger than the house, so you can roam further out there
+        const maxX = inField ? 10  : 4.5;
+        const minZ = inField ? -5  : -4.5;
+        const maxZ = inField ? 6.5 : 4.5;
+        playerMesh.position.x = Math.max(-maxX, Math.min(maxX, playerMesh.position.x));
+        playerMesh.position.z = Math.max(minZ,  Math.min(maxZ, playerMesh.position.z));
     }
 
     // Baby throw arc
@@ -347,8 +357,12 @@ function animate() {
         updateParentAI(dadAI, DAD_HOME);
     }
 
-    // School NPC movement
-    if (inSchool) updateSchoolNPCs();
+    // School NPC movement (in the classroom they sit at desks; at recess they run around the field)
+    if (inSchool) { if (inField) updateFieldNPCs(); else updateSchoolNPCs(); }
+
+    // Weather and presents
+    updateSnow();
+    animateHomeExtras();
 
     // Bobbing animation for milk and diaper
     const t = Date.now() * 0.003;

@@ -186,7 +186,12 @@ function spawnBlood() {
 // HOSPITAL
 // =============================================
 
+// A parent rushes you to the hospital by car, then the operating room opens.
 function goToHospital() {
+    if (!driveTo('to the hospital', '🏥', openOperatingRoom, { duration: 3200 })) openOperatingRoom();
+}
+
+function openOperatingRoom() {
     const overlay = document.createElement('div');
     overlay.id = 'hospital-overlay';
     overlay.style.cssText = `
@@ -370,9 +375,13 @@ function leaveHospital() {
     const overlay = document.getElementById('hospital-overlay');
     if (overlay) overlay.remove();
     player.health = Math.min(100, player.health + 40);
-    if (playerMesh) playerMesh.position.set(-3, 0.9, 0);
     updateStats();
     saveGame();
-    showEvent('💉', 'Dr. Smith patched you up. Back home now!');
+    // A parent drives you home
+    function arriveHome() {
+        if (playerMesh) playerMesh.position.set(-3, 0.9, 0);
+        showEvent('💉', 'Dr. Smith patched you up. Back home now!');
+    }
+    if (!driveTo('home', '🏠', arriveHome, { duration: 3200 })) arriveHome();
 }
 

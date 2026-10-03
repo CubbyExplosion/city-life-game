@@ -97,6 +97,14 @@ function pickSchool(name) {
 
 
 function study() {
+    if (driving) return; // already on the way somewhere
+    // Snow day! Snow closes every school (and homeschool lessons too) until the new year.
+    if (isSnowing()) {
+        showEvent('❄️', player.school === 'Homeschool'
+            ? 'Snow day! Too snowy for lessons — go play!'
+            : 'Snow day! School is closed until the new year.');
+        return;
+    }
     if (Date.now() < studyCooldown) {
         showEvent('😅', 'You just studied! Rest a bit first.');
         return;
@@ -105,7 +113,8 @@ function study() {
     if (player.school === 'Homeschool') {
         studyAtHome();
     } else {
-        enterSchool();
+        // A parent drives you to school
+        if (!driveTo('to school', '🏫', enterSchool)) enterSchool();
     }
 }
 
@@ -342,6 +351,9 @@ function spawnSchoolNPCs() {
 function enterSchool() {
     if (inSchool) return;
     inSchool = true;
+    inField = false;
+    fieldBall = null;
+    clearTimeout(recessTimer);
     // Exam days: every 10th day of the year (day 10, 20, 30 ... 100)
     isExamDay = player.sleepCount > 0 && player.sleepCount % 10 === 0;
     failedExamToday = false;
@@ -388,12 +400,15 @@ function enterSchool() {
 
 
 function pickUpFromSchool() {
-    // Spawn a parent at the classroom door who walks to the player
-    const parentGroup = buildNPC(5.5, 3.8, 0x4169E1, 0x4B2800, {
+    if (!inSchool || driving || pickupInProgress) return; // already leaving, or already home
+    pickupInProgress = true;
+    clearTimeout(recessTimer); // leaving now — recess can't end on its own later
+    // Spawn a parent who walks to the player (from the classroom door, or the edge of the field)
+    const parentGroup = buildNPC(inField ? 10.5 : 5.5, 3.8, 0x4169E1, 0x4B2800, {
         name: 'Mom', dialogue: '', happiness: 0, isSchoolNPC: false
     });
     schoolObjects.push(parentGroup);
-    showEvent('👪', 'Mom walked in to pick you up from school!');
+    showEvent('👪', 'Mom came to pick you up from school!');
 
     const walk = setInterval(() => {
         const px = playerMesh.position.x;
@@ -403,7 +418,10 @@ function pickUpFromSchool() {
         const dist = Math.hypot(px - parentGroup.position.x, pz - parentGroup.position.z);
         if (dist < 1.2) {
             clearInterval(walk);
-            setTimeout(leaveSchool3D, 700);
+            // Then a car ride home
+            setTimeout(() => {
+                if (!driveTo('home', '🏠', leaveSchool3D)) leaveSchool3D();
+            }, 700);
         }
     }, 50);
 }
@@ -412,6 +430,10 @@ function pickUpFromSchool() {
 function leaveSchool3D() {
     if (!inSchool) return;
     inSchool = false;
+    inField = false;
+    fieldBall = null;
+    pickupInProgress = false;
+    clearTimeout(recessTimer);
     activeBully = null;
 
     schoolObjects.forEach(obj => scene.remove(obj));
@@ -424,6 +446,7 @@ function leaveSchool3D() {
 
     playerMesh.position.set(0, player.age <= 4 ? 0.9 : 0, 0);
     document.getElementById('location-name').textContent = '🏠 Home';
+    refreshHomeExtras(); // presents/toys/winter decorations (anything that changed while you were away)
     updateActionPanel();
     if (failedExamToday) {
         failedExamToday = false;
@@ -585,10 +608,164 @@ function advancePeriod() {
     } else if (schoolPeriod === 6) {
         showEvent('🏃', 'Time for PE! Get ready to move!');
         nextApproachTime = Date.now() + 3000 + Math.random() * 5000; // 3-8s randomly
-    } else if (schoolPeriod >= 7) {
+    } else if (schoolPeriod === 7) {
+        startRecess();
+    } else if (schoolPeriod >= 8) {
         showEvent('🎒', 'School day done! Your parent is coming!');
         setTimeout(() => pickUpFromSchool(), 2000);
     }
+}
+
+// =============================================
+// RECESS — the last part of the school day happens OUTSIDE on the
+// sunny grass field. Walk around, kick the soccer ball, chat with
+// classmates. After 25 seconds (or press Go Home) the day ends.
+// =============================================
+
+function startRecess() {
+    showEvent('🌳', 'Recess! Everyone is heading out to the sunny field!');
+    if (activeBully) removeBully(); // bullies don't get recess
+    setTimeout(() => { if (inSchool && schoolPeriod === 7) goOutside(); }, 1200);
+}
+
+function goOutside() {
+    if (!inSchool || inField) return;
+    inField = true;
+
+    // Put the classroom away — but everyone INSIDE it walks out with us
+    const people = schoolNPCList.map(n => n.group);
+    schoolObjects.forEach(obj => { if (!people.includes(obj)) scene.remove(obj); });
+    clickableNPCs.length = 0;
+    people.forEach(g => clickableNPCs.push(g));
+
+    buildSchoolField();
+
+    schoolNPCList.forEach((npc, i) => {
+        npc.deskPos = null; // nobody's sitting at a desk anymore
+        const x = -5 + i * 2.8, z = -1 + (i % 2) * 2.5;
+        npc.group.position.set(x, 0, z);
+        npc.target = { x, z };
+    });
+    playerMesh.position.set(0, 0, 3.5);
+    document.getElementById('location-name').textContent = '🌳 Schoolyard';
+    recessTimer = setTimeout(() => { if (inSchool && inField && schoolPeriod === 7) advancePeriod(); }, RECESS_MS);
+    updateActionPanel();
+}
+
+function buildSchoolField() {
+    function add(w, h, d, x, y, z, color, parent) {
+        const m = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), new THREE.MeshLambertMaterial({ color }));
+        m.position.set(x, y, z);
+        if (parent) { parent.add(m); } else { scene.add(m); schoolObjects.push(m); }
+        return m;
+    }
+    function group(x, z) {
+        const g = new THREE.Group();
+        g.position.set(x, 0, z);
+        scene.add(g);
+        schoolObjects.push(g);
+        return g;
+    }
+
+    // Sunny sky, a big sun and a few clouds
+    scene.background = new THREE.Color(0x7ec8f2);
+    const sun = new THREE.Mesh(new THREE.SphereGeometry(1.6, 16, 16), new THREE.MeshBasicMaterial({ color: 0xFFE066 }));
+    sun.position.set(-13, 15, -14);
+    scene.add(sun);
+    schoolObjects.push(sun);
+    [[-6, 12, -12], [5, 13.5, -14], [12, 11.5, -10]].forEach(([x, y, z]) => add(4.5, 0.9, 2, x, y, z, 0xffffff));
+
+    // The grass, with lighter mowing stripes
+    add(30, 0.2, 20, 0, -0.1, 0.5, 0x5DBB4A);
+    for (let i = 0; i < 7; i += 2) add(4, 0.02, 20, -12 + i * 4, 0.01, 0.5, 0x6ACB57);
+    add(2.6, 0.03, 6, 0, 0.02, -5.5, 0xD7C49E); // dirt path to the school
+
+    // The school building at the back
+    add(18, 5, 1.5, 0, 2.5, -9.5, 0xB5523B);        // brick wall
+    add(19, 0.5, 2.3, 0, 5.2, -9.5, 0x6D4C41);      // roof
+    add(1.8, 2.6, 0.2, 0, 1.3, -8.7, 0x5D4037);     // door
+    add(4, 0.7, 0.2, 0, 4.3, -8.7, 0xFFD700);       // gold sign
+    [-6, -3.6, 3.6, 6].forEach(x => add(1.6, 1.3, 0.2, x, 3, -8.7, 0xADD8E6)); // windows
+
+    // Trees
+    [[-12, -3], [-12.5, 3.5], [12, -4], [12.4, 2.5], [-9, -7], [9.5, -7]].forEach(([x, z]) => {
+        const t = group(x, z);
+        add(0.5, 1.8, 0.5, 0, 0.9, 0, 0x6D4C41, t);
+        add(2.2, 2.0, 2.2, 0, 2.7, 0, 0x2E8B3C, t);
+        add(1.4, 1.2, 1.4, 0, 4.0, 0, 0x38A04A, t);
+    });
+
+    // Fence along both sides
+    [-13.5, 13.5].forEach(x => {
+        add(0.12, 0.14, 17, x, 0.75, 0.5, 0xF5F5F5);
+        for (let z = -7; z <= 8; z += 2) add(0.2, 1.1, 0.2, x, 0.55, z, 0xF5F5F5);
+    });
+
+    // Soccer goal on the right
+    add(0.12, 1.8, 0.12, 9.5, 0.9, -1.4, 0xffffff);
+    add(0.12, 1.8, 0.12, 9.5, 0.9, 1.4, 0xffffff);
+    add(0.12, 0.12, 2.9, 9.5, 1.8, 0, 0xffffff);
+    add(0.04, 1.7, 2.8, 10.4, 0.85, 0, 0xe8e8e8);
+
+    // Swings on the left
+    add(0.15, 2.4, 0.15, -9, 1.2, -1.6, 0x7F8C8D);
+    add(0.15, 2.4, 0.15, -9, 1.2, 1.6, 0x7F8C8D);
+    add(0.15, 0.15, 3.5, -9, 2.4, 0, 0x7F8C8D);
+    [-0.7, 0.7].forEach(z => {
+        add(0.05, 1.6, 0.05, -9, 1.6, z, 0x555555);
+        add(0.7, 0.1, 0.35, -9, 0.75, z, 0xE74C3C);
+    });
+
+    // Flowers
+    const flowerColors = [0xFF69B4, 0xFFD54F, 0xFFFFFF, 0xBA68C8];
+    for (let i = 0; i < 26; i++) {
+        add(0.18, 0.3, 0.18, (Math.random() - 0.5) * 22, 0.15, -5 + Math.random() * 11, flowerColors[i % 4]);
+    }
+
+    // The soccer ball — click it to kick it!
+    fieldBall = new THREE.Mesh(new THREE.SphereGeometry(0.3, 14, 14), new THREE.MeshLambertMaterial({ color: 0xffffff }));
+    fieldBall.position.set(2.5, 0.3, 2);
+    fieldBall.userData.npcData = { name: 'Soccer Ball', isBall: true };
+    scene.add(fieldBall);
+    schoolObjects.push(fieldBall);
+    clickableNPCs.push(fieldBall);
+}
+
+// Called every frame at recess: classmates and the teacher wander the field, the ball flies.
+function updateFieldNPCs() {
+    schoolNPCList.forEach(npc => {
+        const p = npc.group.position;
+        const dx = npc.target.x - p.x, dz = npc.target.z - p.z;
+        const dist = Math.hypot(dx, dz);
+        if (dist < 0.25) {
+            npc.target = { x: (Math.random() - 0.5) * 18, z: -4 + Math.random() * 9 }; // pick somewhere new to go
+        } else {
+            const step = npc.isTeacher ? 0.018 : 0.034;
+            p.x += (dx / dist) * step;
+            p.z += (dz / dist) * step;
+            npc.group.rotation.y = Math.atan2(dx, dz);
+        }
+    });
+
+    const kick = fieldBall && fieldBall.userData.kick;
+    if (kick) {
+        kick.t += 0.025;
+        const t = Math.min(kick.t, 1);
+        fieldBall.position.x = kick.from.x + (kick.to.x - kick.from.x) * t;
+        fieldBall.position.z = kick.from.z + (kick.to.z - kick.from.z) * t;
+        fieldBall.position.y = 0.3 + Math.sin(t * Math.PI) * 1.6;
+        if (kick.t >= 1) fieldBall.userData.kick = null;
+    }
+}
+
+function kickBall() {
+    if (!fieldBall || fieldBall.userData.kick) return; // still flying
+    const from = fieldBall.position.clone();
+    const to = new THREE.Vector3((Math.random() - 0.5) * 18, 0.3, -3 + Math.random() * 8);
+    fieldBall.userData.kick = { from, to, t: 0 };
+    player.happiness = Math.min(100, player.happiness + 3);
+    showEvent('⚽', 'You kicked the ball! +3 happiness');
+    updateStats(); saveGame();
 }
 
 
