@@ -38,7 +38,10 @@ function startGame(gender) {
     player.happiness = 50; player.health = 100; player.education = 0;
     player.city = 'Maple Grove'; player.lastMoveAge = 0; player.homework = null;
     player.parentTemperament = Math.random() < 0.5 ? 'strict' : 'calm';
-    player.toys = []; player.gifts = [];
+    player.toys = []; player.gifts = []; player.dinnerDay = null; player.friendship = {}; player.lastMallDay = -999; player.crimeStats = null; player.home = null;
+    player.fullness = 80; player.fridge = []; player.graduated = false; player.degree = null; player.uni = null; player.job = null;
+    player.loan = 0; player.overdue = 0; player.lastWorkDay = -1; player.lastUniDay = -1;
+    restockFridge(true);                       // Mom & Dad stock the fridge (food.js)
     rollSnowYear();
     birthdayMessage = '';
     lastDayTime = Date.now();
@@ -52,6 +55,7 @@ function continueGame() {
 }
 
 function launchGame() {
+    ensureFoodState(); fixLifeForAge();       // older saves: make sure the fridge / adult-life fields exist (food.js, life.js)
     document.getElementById('start-screen').classList.add('hidden');
     document.getElementById('game-screen').classList.remove('hidden');
     updateStats();
@@ -73,6 +77,22 @@ function launchGame() {
 }
 
 // ---- Day Timer ----
+// The day-length menu: how many real seconds one in-game day takes (max 60 = 1 minute)
+// THE OLDER YOU GET, THE LONGER TIME TAKES: a day lasts half the chosen length for a baby and slowly
+// stretches to the full chosen length by age 85 (so the menu value is the longest a day ever gets).
+function currentDayMs() {
+    const t = Math.max(0, Math.min(1, ((player && player.age ? player.age : 1) - 1) / 84));
+    return DAY_MS * (0.5 + 0.5 * t);
+}
+
+function setDayLength(sec) {
+    sec = Math.max(1, Math.min(60, parseInt(sec, 10) || 6));
+    DAY_MS = sec * 1000;
+    try { localStorage.setItem('citylife_day_seconds', String(sec)); } catch (e) {}
+    lastDayTime = Date.now();
+    updateActionPanel();
+}
+
 function setSpeed(n) {
     daySpeed = n;
     lastDayTime = Date.now(); // reset so the countdown starts fresh at the new speed
@@ -81,9 +101,15 @@ function setSpeed(n) {
 
 function startDayTimer() {
     if (dayTimerInterval) clearInterval(dayTimerInterval);
+    let lastTick = Date.now();
     dayTimerInterval = setInterval(() => {
-        if (driving || inStore) return; // the clock pauses during car rides and store trips (they put it back when they end)
-        const effectiveDayMs = DAY_MS / daySpeed;
+        const tickNow = Date.now(), tickGap = tickNow - lastTick;
+        lastTick = tickNow;
+        // TIME ONLY PASSES AT HOME. At school, at university and at work the clock stands still
+        // (we slide the day's start forward by the time that passed, so no time is "owed" afterwards).
+        if ((inSchool || inUni || inWork) && !(driving || inStore || inRestaurant || inNeighborhood || inMall)) { lastDayTime += tickGap; return; }
+        if (driving || inStore || inRestaurant || inNeighborhood || inMall) return; // the clock pauses during car rides and store trips (they put it back when they end)
+        const effectiveDayMs = currentDayMs() / daySpeed;
         const remaining = effectiveDayMs - (Date.now() - lastDayTime);
         if (remaining <= 0) {
             lastDayTime = Date.now();
@@ -104,7 +130,7 @@ function updateCountdown(ms) {
 }
 
 function catchUpDays() {
-    const missed = Math.floor((Date.now() - lastDayTime) / DAY_MS);
+    const missed = Math.floor((Date.now() - lastDayTime) / currentDayMs());
     for (let i = 0; i < missed; i++) advanceOneDay(true);
     if (missed > 0) { lastDayTime = Date.now(); saveGame(); updateStats(); updateActionPanel(); }
 }
@@ -138,6 +164,10 @@ function advanceOneDay(silent) {
         if (player.age === 5 && !silent) {
             setTimeout(() => showSchoolChoice(), 1500);
         }
+        if (player.age === 18) handleGraduation(silent);      // you finish school: university or a job? (life.js)
+        if (player.age === OUTSIDE_AGE && !silent) {
+            setTimeout(() => showEvent('🌳', "You're old enough to play outside now! Press 🌳 Go Outside to meet the neighbors."), 3500);
+        }
         if (!silent) birthdayMessage = `🎉 ${player.name} turned ${player.age} today! ` + birthdayMessage;
         if (!silent) maybeTriggerCityMove();
     }
@@ -150,6 +180,16 @@ function advanceOneDay(silent) {
     if (!silent && !inSchool && player.sleepCount % 3 === 0 && Math.random() < 0.7) {
         setTimeout(() => spawnRelative(), 1000);
     }
+
+    // You get hungrier, food spoils, parents feed you (food.js); bills and loans (life.js)
+    foodNewDay(silent);
+    lifeNewDay(silent);
+
+    // Every day there's a chance of a crime somewhere in the city — 1% of them at schools (crime.js)
+    rollDailyCrime(silent);
+
+    // Every now and then, Mom & Dad offer to take you to the mall (mall.js)
+    if (!silent) maybeRollMallTrip();
 
     // Every 5 days, a pet might go missing nearby
     if (!silent && player.sleepCount % 5 === 0) {
@@ -175,7 +215,8 @@ function updateActionPanel() {
         `<button class="speed-btn${daySpeed === n ? ' speed-active' : ''}" onclick="setSpeed(${n})">${n}x</button>`
     ).join('');
     const seasonTag = isSnowing() ? '❄️ Snowing &nbsp;|&nbsp; ' : isWinter() ? '🎄 Winter &nbsp;|&nbsp; ' : '';
-    const dayInfo = `${seasonTag}☀️ Day <strong>${player.sleepCount}/100</strong> &nbsp;|&nbsp; Next day in: <strong><span id="day-timer">--:--</span></strong> &nbsp;|&nbsp; ⏩ ${speedBtns}`;
+    const lenOpts = DAY_LENGTH_CHOICES.map(s => `<option value="${s}"${s * 1000 === DAY_MS ? ' selected' : ''}>${s === 60 ? '1 min' : s + ' sec'}</option>`).join('');
+    const dayInfo = `${seasonTag}☀️ Day <strong>${player.sleepCount}/100</strong> &nbsp;|&nbsp; Next day in: <strong><span id="day-timer">--:--</span></strong> &nbsp;|&nbsp; 📅 Longest day <select onchange="setDayLength(this.value)" style="background:#0f3460; color:#fff; border:1px solid #3498db; border-radius:6px; padding:2px;">${lenOpts}</select> &nbsp;|&nbsp; ⏩ ${speedBtns}`;
 
     // At the grocery store: show your cart, the crowd, and a button back to the car
     if (inStore && store) {
@@ -194,6 +235,22 @@ function updateActionPanel() {
         return;
     }
 
+    // At the mall: a hint, and a way to leave early
+    if (inMall && mall3D) {
+        panel.innerHTML = `
+            <div style="color:#aaa;margin-bottom:6px">⬆️⬇️⬅️➡️ to walk — use the escalator ramps to change floors &nbsp;|&nbsp; 💰 $${player.money}${mallTrip && mallTrip.mode === 'trip' ? ' &nbsp;|&nbsp; 💳 Budget $' + mallTrip.budget : ''}</div>
+            <button class="action-btn" onclick="leaveMall()">🏠 Go home now</button>`;
+        return;
+    }
+
+    // Playing outside on your street: a hint and the way back home
+    if (inNeighborhood && neighborhood3D) {
+        panel.innerHTML = `
+            <div style="color:#aaa;margin-bottom:6px">⬆️⬇️⬅️➡️ to walk &nbsp;|&nbsp; 👆 click a person close to you to talk or play</div>
+            <button class="action-btn" onclick="leaveNeighborhood()">🏠 Go Home</button>`;
+        return;
+    }
+
     if (inSchool) {
         const isClassPd = [0, 2, 3, 5, 6].includes(schoolPeriod);
         const progress = isClassPd
@@ -208,7 +265,7 @@ function updateActionPanel() {
     const bMsg = birthdayMessage
         ? `<p style="color:#FFD700;margin-bottom:4px">${birthdayMessage}</p>` : '';
 
-    const cookBtn = `<button class="action-btn" onclick="openMiniGame()">🍳 Cook</button>`;
+    const cookBtn = `<button class="action-btn" onclick="openKitchen()">🍳 Kitchen</button>`;   // cook from what's really in your fridge (food.js)
     const toyCount = (player.toys || []).length;
     const toyBtn = toyCount > 0
         ? `<button class="action-btn" onclick="showToyBox()">🧸 Toys (${toyCount})</button>`
@@ -234,9 +291,13 @@ function updateActionPanel() {
         const shopBtn = player.age >= 3
             ? `<button class="action-btn" onclick="openShopping()">🛍️ Go Shopping</button>`
             : '';
+        const outsideBtn = (player.age >= OUTSIDE_AGE
+            ? `<button class="action-btn" onclick="goPlayOutside()">🌳 Go Outside</button>`
+            : '') + `<button class="action-btn" onclick="showGamePicker(null)">🎲 Games</button>`   // table games to play by yourself (kids-games.js)
+            + (player.age >= 5 ? `<button class="action-btn" onclick="showCrimeReport()">📰 News</button>` : '');   // the city crime report (crime.js)
         panel.innerHTML = `${bMsg}
             <div style="color:#aaa;margin-bottom:6px">⬆️⬇️⬅️➡️ to walk &nbsp;|&nbsp; ${dayInfo}</div>
-            ${cookBtn} ${shopBtn} ${toyBtn} ${studyBtn} ${homeworkBtn}`;
+            ${cookBtn} ${shopBtn} ${outsideBtn} ${toyBtn} ${studyBtn} ${homeworkBtn} ${lifeButtons()}`;
     }
 }
 
@@ -249,6 +310,8 @@ function updateStats() {
     document.getElementById('happy-display').textContent  = player.happiness;
     document.getElementById('health-display').textContent = player.health;
     document.getElementById('edu-display').textContent    = player.education;
+    const fullEl = document.getElementById('full-display');
+    if (fullEl) fullEl.textContent = typeof player.fullness === 'number' ? player.fullness : 80;
 
     // Show grade badge only when age 5+
     const gradeEl = document.getElementById('grade-display');
@@ -280,7 +343,14 @@ function restartGame() {
     player.education = 0; player.gender = null; player.school = null;
     player.city = 'Maple Grove'; player.lastMoveAge = 0; player.homework = null;
     player.parentTemperament = 'calm';
-    player.snowYear = false; player.toys = []; player.gifts = [];
+    player.snowYear = false; player.toys = []; player.gifts = []; player.dinnerDay = null; player.friendship = {}; player.lastMallDay = -999; player.crimeStats = null; player.home = null;
+    player.fullness = 80; player.fridge = []; player.graduated = false; player.degree = null; player.uni = null; player.job = null;
+    player.loan = 0; player.overdue = 0; player.lastWorkDay = -1; player.lastUniDay = -1;
+    resetFood(); resetLife();
+    resetCrime();
+    resetMall();
+    resetDinner();
+    resetNeighborhood();
     birthdayMessage = '';
     inSchool = false;
     inField = false;

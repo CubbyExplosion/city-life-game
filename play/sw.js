@@ -1,4 +1,4 @@
-const CACHE_NAME = 'city-life-v5';
+const CACHE_NAME = 'city-life-v6';
 // (src/suin-words.js is ~260 KB and only loads when you first open a classmate chat, so it isn't
 // downloaded up front — it gets cached the first time it's used.)
 const ASSETS = [

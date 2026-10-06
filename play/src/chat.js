@@ -38,9 +38,10 @@ async function askGemini(name, userMsg) {
 // 4,800+ word definitions (loaded the first time you open a chat).
 // The order a classmate thinks in:
 //   1. who they are / their age / rude words   (their own personality)
+//   1b. school life ("did you fail?", "exam today?", "homework?")  (City Life only — classmate-life.js)
 //   2. real math ("what is 7 times 8")          (Suin)
 //   3. "what does X mean"                       (Suin)
-//   4. longer friendly phrases ("how are you")  (Suin)
+//   4. social cues + longer friendly phrases ("i'm sad", "congrats", "how are you")  (Suin)
 //   5. their own favorite topics (football, drawing...) and everyday words
 //   6. if nothing matches, a funny "huh?" reply
 // =============================================
@@ -94,9 +95,19 @@ function getClassmateResponse(name, msg) {
     const text = normalizeKidSpeak(msg);
     const findKey = keys => keys.find(entry => entry.words.some(w => friendWordMatch(text, w)));
 
+    // 0. "i hate science" / "i love art" — an opinion about a school subject (classmate-life.js). Checked first, because the
+    //    rude-words entry below treats the word "hate" as "do you hate ME?" and answered "Nobody should hate you!"
+    const opinion = typeof classmateOpinionReply === 'function' ? classmateOpinionReply(name, text) : null;
+    if (opinion) return opinion;
+
     // 1. Who they are, how old, rude words — the first 3 entries of every classmate's table (data.js)
     const own = findKey(data.keys.slice(0, 3));
     if (own) return pick(own.says);
+
+    // 1b. School life — "did you fail?", "is there an exam today?", "did you do your homework?"
+    //     (City Life only — classmate-life.js reads the game's state; the real Suin isn't involved)
+    const school = typeof classmateSchoolReply === 'function' && !data.adult ? classmateSchoolReply(name, text) : null;   // grown-ups don't take your school exams
+    if (school) return school;
 
     // 2. Real math, the way Suin does it
     const expr = extractMathExpression(text);
@@ -121,7 +132,12 @@ function getClassmateResponse(name, msg) {
             : "I don't know that word yet! 🤷";
     }
 
-    // 4. Suin's longer friendly phrases
+    // 4a. Suin's social cues — how a normal person chats (comfort, cheering, sorry, goodbyes...)
+    //     classmate:true leaves out "I'm a chatbot" answers — Jake isn't a robot.
+    const social = typeof findSocialMatch === 'function' ? findSocialMatch(text, null, { classmate: true }) : null;
+    if (social) return social;
+
+    // 4b. Suin's longer friendly phrases
     const suinSays = suinPhraseReply(text);
     if (suinSays) return suinSays;
 

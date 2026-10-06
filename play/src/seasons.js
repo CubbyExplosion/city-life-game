@@ -33,7 +33,7 @@ function announceWinter(silent) {
 // touches things when we're standing in the house scene, and it adds or
 // removes snow so it always matches isSnowing().
 function syncWeather() {
-    if (!scene || inSchool || driving || inStore) return; // the house is put away right now — we'll sync when we're back
+    if (!scene || inSchool || driving || inStore || inRestaurant || inNeighborhood || inMall || inWork || inUni) return; // the house is put away right now — we'll sync when we're back
 
     if (isSnowing()) {
         scene.background = new THREE.Color(0xcfdcea);

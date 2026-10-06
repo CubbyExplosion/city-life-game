@@ -357,10 +357,11 @@ function enterSchool() {
     // Exam days: every 10th day of the year (day 10, 20, 30 ... 100)
     isExamDay = player.sleepCount > 0 && player.sleepCount % 10 === 0;
     failedExamToday = false;
+    lessonTaughtPeriod = -1; activeLesson = null;     // fresh day: the first class gets its lesson (lessons.js)
     if (isExamDay) {
         showEvent('📝', 'Exam day today! The teacher will test you!');
     } else {
-        showEvent('📚', 'Regular school day — chat with classmates!');
+        showEvent('📚', 'School day! The teacher will ask you questions in class — you can chat with classmates too.');
     }
 
     // Missed homework from last time? The teacher notices.
@@ -396,6 +397,7 @@ function enterSchool() {
     updateActionPanel();
     showEvent('🏫', 'You walked into school! Click NPCs to interact.');
     setTimeout(() => maybeSpawnBully(), 4000);
+    maybeWitnessCrime('school', 3500);        // only 1 in 100 crimes happens at school (crime.js)
 }
 
 
@@ -463,10 +465,12 @@ function leaveSchool3D() {
                 setTimeout(() => relativesAttackParents(), 1200);
             }
             setTimeout(assignHomework, 3000);
+            setTimeout(maybeOfferDinner, 6500); // then Mom & Dad ask where to eat (dinner.js)
         }, 1500);
     } else {
         showEvent('🏠', 'You\'re home! See you tomorrow!');
         setTimeout(assignHomework, 2500);
+        setTimeout(maybeOfferDinner, 5000);     // then Mom & Dad ask where to eat (dinner.js)
     }
 }
 
@@ -540,9 +544,10 @@ function answerHomework(chosenIndex, correctIndex) {
 function updateSchoolNPCs() {
     const teacherNpc = schoolNPCList.find(n => n.isTeacher);
 
-    // Teacher only approaches during class periods (0, 2, 3, 5, 6) AND on exam days
+    // The teacher teaches during every class period (0, 2, 3, 5, 6) of every school day.
+    // (Exam days are the same lessons, but a wrong answer gets you in trouble at home.)
     const isClassPeriod = [0, 2, 3, 5, 6].includes(schoolPeriod);
-    if (teacherNpc && isClassPeriod && isExamDay) {
+    if (teacherNpc && isClassPeriod) {
         if (teacherApproachState === 'wandering' && Date.now() > nextApproachTime) {
             teacherApproachState = 'approaching';
             showEvent('🧑‍🏫', `${teacherNpc.group.userData.npcData.name} is coming over!`);
@@ -588,6 +593,7 @@ function updateSchoolNPCs() {
 
 function advancePeriod() {
     schoolPeriod++;
+    activeLesson = null;      // a new class = a new lesson (lessons.js)
     correctThisPeriod = 0;
     teacherApproachState = 'wandering';
     updateActionPanel();
@@ -837,6 +843,7 @@ function eatFood(hap, health, cost) {
     player.money -= (cost || 0);
     player.happiness = Math.min(100, player.happiness + hap);
     player.health    = Math.min(100, player.health    + health);
+    gainFullness(cost ? 12 : 30, true);                  // a snack or a school lunch fills you up (food.js)
     updateStats(); saveGame();
     showEvent('😋', cost ? `Yum! -$${cost}, +${hap} happiness, +${health} health` : `Yum! +${hap} happiness, +${health} health`);
     setTimeout(advancePeriod, 1200);
@@ -861,8 +868,12 @@ function withCityFlavor(basePool, subject) {
 
 // Picks one item from a pool and builds 3 wrong-answer choices from the other items in that pool
 
-function pickWithDistractors(pool, key) {
-    const item = pool[Math.floor(Math.random() * pool.length)];
+function pickWithDistractors(pool, key, subject) {
+    // Mostly ask about what the teacher JUST TAUGHT this class (lessons.js)
+    const taught = activeLesson && activeLesson.subject === subject && activeLesson.items;
+    const item = taught && Math.random() < 0.8
+        ? activeLesson.items[Math.floor(Math.random() * activeLesson.items.length)]
+        : pool[Math.floor(Math.random() * pool.length)];
     const wrongs = pool.filter(p => p !== item)
                         .map(p => p[key])
                         .sort(() => Math.random() - 0.5)
@@ -926,8 +937,8 @@ function generateMathQuestion() {
 
 function generateReadingQuestion(grade) {
     const pool = withCityFlavor(READING_BANKS[gradeTier(grade)], 'Reading');
-    const { item, choices, correctIndex } = pickWithDistractors(pool, 'meaning');
-    return { subject: 'Reading', question: `What does "${item.word}" mean?`, choices, correctIndex, grade };
+    const { item, choices, correctIndex } = pickWithDistractors(pool, 'meaning', 'Reading');
+    return { subject: 'Reading', question: `What does "${item.word}" mean?`, choices, correctIndex, grade, item };
 }
 
 // ---------------------------------------------
@@ -936,8 +947,8 @@ function generateReadingQuestion(grade) {
 
 function generateScienceQuestion(grade) {
     const pool = withCityFlavor(SCIENCE_BANKS[gradeTier(grade)], 'Science');
-    const { item, choices, correctIndex } = pickWithDistractors(pool, 'answer');
-    return { subject: 'Science', question: item.q, choices, correctIndex, grade };
+    const { item, choices, correctIndex } = pickWithDistractors(pool, 'answer', 'Science');
+    return { subject: 'Science', question: item.q, choices, correctIndex, grade, item };
 }
 
 // ---------------------------------------------
@@ -946,8 +957,8 @@ function generateScienceQuestion(grade) {
 
 function generateArtQuestion(grade) {
     const pool = withCityFlavor(ART_BANKS[gradeTier(grade)], 'Art');
-    const { item, choices, correctIndex } = pickWithDistractors(pool, 'answer');
-    return { subject: 'Art', question: item.q, choices, correctIndex, grade };
+    const { item, choices, correctIndex } = pickWithDistractors(pool, 'answer', 'Art');
+    return { subject: 'Art', question: item.q, choices, correctIndex, grade, item };
 }
 
 
@@ -1007,7 +1018,9 @@ function doPEClick() {
 function askMathQuestion(npcName) {
     if (document.getElementById('math-overlay')) return;
     if (document.getElementById('math-inline')) return;
+    if (lessonOverlayOpen()) return;                              // a lesson or an explanation is being shown (lessons.js)
     const subject = SUBJECT_BY_PERIOD[schoolPeriod] || 'Math';
+    if (maybeTeachLesson(subject, npcName)) return;               // the teacher TEACHES first, then asks (lessons.js)
 
     if (subject === 'PE') {
         startPEChallenge(`🏃 PE — ${npcName} says:`, () => {
@@ -1115,8 +1128,9 @@ function handleMathAnswer(chosenIndex, correctIndex) {
             nextApproachTime = Date.now() + 3000 + Math.random() * 5000;
         }
     } else {
-        showEvent('❌', `Not quite! The answer was ${correctText}. Teacher will ask again!`);
-        nextApproachTime = Date.now() + 3000 + Math.random() * 5000;
+        showEvent('❌', `Not quite! The answer was ${correctText}.`);
+        showExplanation(currentQuestion);                             // the teacher shows you how it works (lessons.js)
+        nextApproachTime = Date.now() + 6000 + Math.random() * 5000;
         if (isExamDay) failedExamToday = true;
     }
     updateStats(); saveGame();

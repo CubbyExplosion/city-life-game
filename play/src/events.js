@@ -48,6 +48,8 @@ function relativesAttackParents() {
 
 
 function interactWithNPC(npcData) {
+    // A neighbor on your street: show the talk / play menu (neighborhood.js)
+    if (npcData.isNeighbor) { openNeighborMenu(npcData); return; }
     // Presents and the soccer ball have their own timing — no 3-second wait between clicks
     if (npcData.isGift) { openGift(npcData.giftId); return; }
     if (npcData.isBall) { kickBall(); return; }
@@ -84,7 +86,7 @@ function interactWithNPC(npcData) {
 
 function spawnRelative() {
     if (!scene) return;
-    if (inSchool || driving || inStore) return; // don't let relatives sneak into school (or into the car!)
+    if (inSchool || driving || inStore || inRestaurant || inNeighborhood || inMall || inWork || inUni) return; // don't let relatives sneak into school (or into the car!)
     if (activeRelatives.length >= 2) return; // max 2 relatives at once
     const data = RELATIVE_DATA[Math.floor(Math.random() * RELATIVE_DATA.length)];
     const x = (Math.random() - 0.5) * 5;
@@ -223,7 +225,7 @@ function bullyChoice(choice) {
 // =============================================
 
 function maybeTriggerMissingPet() {
-    if (inSchool || driving || inStore || activePet) return;
+    if (inSchool || driving || inStore || inRestaurant || inNeighborhood || inMall || inWork || inUni || activePet) return;
     if (Math.random() < 0.35) {
         setTimeout(() => spawnMissingPet(), 1200);
     }
@@ -231,7 +233,7 @@ function maybeTriggerMissingPet() {
 
 
 function spawnMissingPet() {
-    if (!scene || inSchool || driving || inStore || activePet) return;
+    if (!scene || inSchool || driving || inStore || inRestaurant || inNeighborhood || inMall || inWork || inUni || activePet) return;
     const name = PET_NAMES[Math.floor(Math.random() * PET_NAMES.length)];
     const x = (Math.random() - 0.5) * 5;
     const z = (Math.random() - 0.5) * 5;
@@ -268,9 +270,9 @@ function foundMissingPet(npcData) {
 // =============================================
 
 function maybeTriggerFoundMoney() {
-    if (inSchool || driving || inStore) return;
+    if (inSchool || driving || inStore || inRestaurant || inNeighborhood || inMall || inWork || inUni) return;
     if (Math.random() < 0.25) {
-        setTimeout(() => { if (!driving && !inStore) showFoundMoney(); }, 1500);
+        setTimeout(() => { if (!driving && !inStore && !inRestaurant && !inNeighborhood && !inMall && !inWork && !inUni) showFoundMoney(); }, 1500);
     }
 }
 

@@ -23,13 +23,33 @@ const player = {
     parentTemperament: 'calm', // 'calm' or 'strict' — rolled fresh in startGame(), not shown to the player
     snowYear: false,           // does this year's winter have snow? (rolled every new year — snow closes school)
     toys: [],                  // ids of the toys you own (see TOY_DATA in data.js)
-    gifts: []                  // wrapped presents waiting to be opened: { id, kind: 'birthday' | 'santa' }
+    gifts: [],                 // wrapped presents waiting to be opened: { id, kind: 'birthday' | 'santa' }
+    dinnerDay: null,           // the school day we last went out for dinner (age*1000 + day) — we only ask once a day
+    friendship: {},            // how well you know each neighbor / friend: name -> 0..10 (see neighborhood.js)
+    lastMallDay: -999,         // the last day Mom & Dad offered a mall trip (age*100 + day) — see mall.js
+    home: null,                // null = living with Mom & Dad, or { id, deposit } for your own apartment (apartment.js)
+    crimeStats: null,          // the city's crime counts: { total, school, grocery, mall, street, solved, reported } — see crime.js
+    // Food (food.js)
+    fullness: 80,              // 0-100: how full you are (goes down every day)
+    fridge: [],                // groceries you bought: [{ name, emoji, exp }] (exp = the day it spoils)
+    // Life after school (life.js)
+    graduated: false,          // finished school (at 18)
+    degree: null,              // a university degree: 'medicine', 'engineering', ...
+    uni: null,                 // studying now: { major, year, credits }
+    job: null,                 // your job: { id, shifts, good, bad, level }
+    loan: 0,                   // student loan you still owe
+    overdue: 0,                // unpaid bills carried over
+    lastWorkDay: -1,           // the last day you worked (age*100 + day) — one shift a day
+    lastUniDay: -1             // the last day you went to a lecture
 };
 
 let birthdayMessage = '';
 
 // Day/speed timer
-const DAY_MS = 6 * 1000; // 6 seconds per real-life second = 1 in-game day
+// How long one in-game day lasts in real time. You choose it (3 seconds up to 1 minute) in the day-length menu; it's remembered.
+const DAY_LENGTH_CHOICES = [3, 6, 10, 20, 30, 45, 60];   // seconds (60 = the maximum, 1 minute)
+let DAY_MS = 10 * 1000;       // the LONGEST a day gets (at old age) — see currentDayMs() in core.js
+try { const saved = parseInt(localStorage.getItem('citylife_day_seconds'), 10); if (DAY_LENGTH_CHOICES.includes(saved)) DAY_MS = saved * 1000; } catch (e) {}
 let lastDayTime = Date.now();
 let dayTimerInterval = null;
 let daySpeed = 1; // 1 = normal, 2 = 2x faster, 5 = 5x, 10 = 10x, etc.
@@ -110,3 +130,16 @@ const mg = { recipe: null, added: [], cookInterval: null };       // cooking
 // Grocery store (see store.js)
 let inStore = false;         // true while you're at the grocery store (the day clock pauses)
 let store = null;            // everything about the store visit in progress
+
+// Dinner out (see dinner.js)
+let inRestaurant = false;    // true while Mom & Dad are asking where to eat, and while you're at the restaurant (the day clock pauses)
+
+// Playing outside on your street (see neighborhood.js)
+let inNeighborhood = false;  // true while you're outside with the neighbors (the day clock pauses)
+
+// Shopping at the mall (see mall.js)
+let inMall = false;          // true from "want to come to the mall?" until you're back in the car home (the day clock pauses)
+
+// Work and university (see life.js) — like school, the day clock pauses while you're there
+let inWork = false;          // true during a work shift
+let inUni = false;           // true during a university lecture

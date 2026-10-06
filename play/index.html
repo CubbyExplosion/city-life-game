@@ -47,6 +47,11 @@
             ▶ Continue Saved Game
         </button>
         <button class="howto-btn" onclick="showHowToPlay()">📖 How to Play</button>
+        <p id="photosensitive-note" style="max-width:440px; margin:14px auto 0; font-size:0.78em; line-height:1.35; opacity:0.85;">
+            ⚠️ <strong>Health note:</strong> this game probably isn't the best choice for people with epilepsy or photosensitivity. It has flashing police lights,
+            traffic and warning lights, screen shake in car crashes, and flickering lights. If you are sensitive to flashing lights, please be careful or ask a
+            grown-up first. In <strong>⚙️ Settings</strong> you can turn off camera shake. Stop playing if you feel dizzy or unwell.
+        </p>
     </div>
 
     <!-- HOW TO PLAY GUIDE -->
@@ -59,6 +64,11 @@
                 <p>Live an entire life — from a baby all the way to age 85! Keep your four stats healthy:
                 💰 Money, 😊 Happiness, ❤️ Health, and 📚 Education. Reach age 85, or let your Health hit 0,
                 and you start a brand new life.</p>
+
+                <h3>⚠️ Health Note</h3>
+                <p>This game probably isn't the best for people with <strong>epilepsy or photosensitivity</strong>: it has flashing police and warning lights,
+                screen shake in car crashes, and flickering lights. Please be careful, ask a grown-up first if you're unsure, and stop if you feel unwell.
+                You can turn off camera shake in <strong>⚙️ Settings</strong>.</p>
 
                 <h3>🕹️ Controls</h3>
                 <p>Arrow keys or <strong>WASD</strong> to walk. Click on people in the 3D world to interact with them.</p>
@@ -92,9 +102,12 @@
                 <p>You can't go anywhere on your own — <strong>Mom or Dad drives you</strong> to school (and home again),
                 to the store, and to the hospital. Press <strong>Skip</strong> if you don't want to watch the whole ride.</p>
 
-                <h3>🛒 The Grocery Store</h3>
-                <p>Press <strong>Go Shopping</strong> and you'll arrive in the store's parking lot. <strong>Walk out of the car</strong>,
-                go through the door, and walk into a 🛒 cart to grab it. Push it around with the arrow keys / WASD.
+                <h3>🛍️ Utama Mall &amp; the Grocery Store</h3>
+                <p>Press <strong>Go Shopping</strong> and a parent drives you to <strong>Utama Mall</strong> — a big two-floor mall with a
+                fountain, an atrium, escalators, a food court and about 44 shops you can walk into (with your own money).
+                The <strong>Utama Grocer</strong> is at the far <strong>west end</strong> of the ground floor: walk in and walk into a 🛒 cart to grab it.
+                Every so often Mom &amp; Dad also take you to the mall for a <strong>shopping trip</strong>: you pick 3 of the 100 shops and visit them one by one.
+                In the grocery, push the cart around with the arrow keys / WASD. Push it around with the arrow keys / WASD.
                 Mom and Dad will put groceries in the cart now and then — you can <strong>click the shelves</strong> to add things too.
                 The store can have anywhere from <strong>10 to 1000 shoppers</strong> (a big crowd slows you down!).
                 When your cart has food in it, push it to a <strong>CHECKOUT</strong> lane on the left or right side.
@@ -153,6 +166,7 @@
             <span>😊 <span id="happy-display">50</span></span>
             <span>❤️ <span id="health-display">100</span></span>
             <span>📚 <span id="edu-display">0</span></span>
+            <span title="Fullness — eat in the 🍳 Kitchen!">🍽️ <span id="full-display">80</span></span>
             <span id="grade-display" style="display:none">🎒 Grade <span id="grade-num">1</span></span>
             <span id="location-name">🏠 Home</span>
         </div>
@@ -179,25 +193,62 @@
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.min.js"></script>
+    <script src="src/realism.js?v=10"></script>
+    <!--
+        These load as plain scripts (not type="module"), so they all share one
+        global scope, same as the old single game.js — no import/export needed.
+        Order matters only for readability here, not correctness: data.js first
+        (pure facts), state.js next (the shared variables everything else uses),
+        then each system, with main.js last (the page-load entry point).
+    -->
     <script src="src/data.js?v=3"></script>
-    <script src="src/state.js?v=3"></script>
-    <script src="src/world.js?v=3"></script>
+    <script src="src/state.js?v=11"></script>
+    <script src="src/settings.js?v=6"></script>
+    <script src="src/firstperson.js?v=7"></script>
+    <script src="src/world.js?v=10"></script>
     <script src="src/homelife.js?v=3"></script>
-    <script src="src/events.js?v=3"></script>
-    <script src="src/minigames.js?v=3"></script>
-    <script src="src/travel.js?v=3"></script>
-    <script src="src/store.js?v=3"></script>
-    <script src="src/seasons.js?v=3"></script>
-    <script src="src/gifts.js?v=3"></script>
-    <script src="src/school.js?v=3"></script>
+    <script src="src/events.js?v=7"></script>
+    <script src="src/minigames.js?v=8"></script>
+    <script src="src/travel.js?v=10"></script>
+    <script src="src/store.js?v=12"></script>
+    <script src="src/store-realism.js?v=2"></script>
+    <script src="src/people.js?v=3"></script>
+    <script src="src/seasons.js?v=7"></script>
+    <script src="src/gifts.js?v=7"></script>
+    <script src="src/restaurant-data.js?v=2"></script>
+    <script src="src/food-models.js?v=3"></script>
+    <script src="src/dinner-scene.js?v=4"></script>
+    <script src="src/dinner.js?v=9"></script>
+    <script src="src/neighborhood-data.js?v=3"></script>
+    <script src="src/street-styles.js?v=1"></script>
+    <script src="src/neighborhood.js?v=12"></script>
+    <script src="src/kids-games.js?v=1"></script>
+    <script src="src/kids-games-street.js?v=3"></script>
+    <script src="src/mall-data.js?v=1"></script>
+    <script src="src/mall.js?v=13"></script>
+    <script src="src/crime.js?v=2"></script>
+    <script src="src/food.js?v=2"></script>
+    <script src="src/life.js?v=6"></script>
+    <script src="src/places.js?v=5"></script>
+    <script src="src/work-tasks.js?v=2"></script>
+    <script src="src/lecture-tasks.js?v=1"></script>
+    <script src="src/apartment.js?v=1"></script>
+    <script src="src/lessons.js?v=1"></script>
+    <script src="src/school.js?v=9"></script>
     <script src="src/suin-brain.js?v=3"></script>
-    <script src="src/chat.js?v=3"></script>
-    <script src="src/core.js?v=3"></script>
+    <script src="src/suin-social.js?v=1"></script>
+    <script src="src/classmate-life.js?v=3"></script>
+    <script src="src/chat.js?v=7"></script>
+    <script src="src/core.js?v=14"></script>
+    <script src="src/heritage.js?v=2"></script>
+    <script src="src/sound.js?v=4"></script>
+    <script src="src/nature.js?v=2"></script>
+    <script src="src/voices.js?v=6"></script>
+    <script src="src/lights.js?v=1"></script>
+    <script src="src/home-walls.js?v=2"></script>
+    <script src="src/furniture.js?v=1"></script>
+    <script src="src/visits.js?v=1"></script>
+    <script src="src/reallife.js?v=1"></script>
     <script src="src/main.js?v=3"></script>
-    <script>
-        if ('serviceWorker' in navigator) {
-            window.addEventListener('load', () => navigator.serviceWorker.register('sw.js'));
-        }
-    </script>
 </body>
 </html>

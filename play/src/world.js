@@ -15,6 +15,10 @@ function initThreeJS() {
     snowPoints = null; snowGround = null; homeExtras = [];
     driving = false; rideState = null; inField = false; fieldBall = null; pickupInProgress = false;
     inStore = false; store = null;
+    inRestaurant = false; restaurant3D = null;
+    inNeighborhood = false; neighborhood3D = null;
+    inMall = false; mall3D = null; mallTrip = null;
+    place3D = null;
 
     camera = new THREE.PerspectiveCamera(60, container.clientWidth / container.clientHeight, 0.1, 100);
     camera.position.set(0, 7, 7);
@@ -24,6 +28,7 @@ function initThreeJS() {
     renderer.setSize(container.clientWidth, container.clientHeight);
     renderer.shadowMap.enabled = true;
     container.appendChild(renderer.domElement);
+    installFirstPerson();                         // firstperson.js
 
     // Click on 3D NPCs using a raycaster
     const raycaster = new THREE.Raycaster();
@@ -165,6 +170,8 @@ function buildPetMesh(x, z, npcData) {
 // =============================================
 
 function buildHome() {
+    // Moved out? Then home is your own apartment (apartment.js), with no Mom & Dad in it
+    if (typeof player !== 'undefined' && player && player.home && typeof buildApartment === 'function') { buildApartment(player.home.id); return; }
     // Floor (warm wood)
     addBox(10, 0.2, 10, 0, -0.1, 0, 0x8B6914);
     // Rug in the center
@@ -215,6 +222,11 @@ function buildHome() {
     addBox(0.4, 1.0,  2.6,  4.3, 0.8,  0, 0x6B3410); // back rest
     addBox(0.9, 0.6,  0.2,  3.8, 0.5, -1.2, 0x6B3410); // left armrest
     addBox(0.9, 0.6,  0.2,  3.8, 0.5,  1.2, 0x6B3410); // right armrest
+
+    // ---- a floor lamp by the couch (glows at night) ----
+    addBox(0.34, 0.08, 0.34, 4.4, 0.04, 3.7, 0x444444);
+    addBox(0.07, 1.9, 0.07, 4.4, 1.0, 3.7, 0x555555);
+    addBox(0.5, 0.36, 0.5, 4.4, 2.0, 3.7, 0xFFF59D);
 
     // ---- PARENTS (built as moveable groups) ----
     momMesh = buildParent(3.55, -0.55, 0x4169E1, 0x4B2800);
@@ -301,13 +313,21 @@ function animate() {
     if (driving) { updateCarRide(); return; }
     // At the grocery store the store (store.js) runs everything, including the camera
     if (inStore) { updateStore(); return; }
+    // At a restaurant the dinner scene (dinner-scene.js) draws everything
+    if (restaurant3D) { updateRestaurantScene(); return; }
+    // Outside on your street, the neighborhood (neighborhood.js) runs everything
+    if (neighborhood3D) { updateNeighborhood(); return; }
+    // At the mall, mall.js runs everything (the walkway, the shops, Mom & Dad following you)
+    if (mall3D) { updateMall(); return; }
+    // At work or on the university campus, places.js runs everything
+    if (place3D) { updatePlace(); return; }
 
     if (player.age >= 3) {
         const speed = 0.06;
-        if (keys['ArrowUp']    || keys['w'] || keys['W']) playerMesh.position.z -= speed;
-        if (keys['ArrowDown']  || keys['s'] || keys['S']) playerMesh.position.z += speed;
-        if (keys['ArrowLeft']  || keys['a'] || keys['A']) playerMesh.position.x -= speed;
-        if (keys['ArrowRight'] || keys['d'] || keys['D']) playerMesh.position.x += speed;
+        const mv = getMoveInput();                       // (first person: rotated to where you look — firstperson.js)
+        playerMesh.position.x += mv.x * speed;
+        playerMesh.position.z += mv.z * speed;
+        if (mv.x || mv.z) playerMesh.rotation.y = Math.atan2(mv.x, mv.z);
         // The schoolyard is much bigger than the house, so you can roam further out there
         const maxX = inField ? 10  : 4.5;
         const minZ = inField ? -5  : -4.5;

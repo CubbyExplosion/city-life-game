@@ -131,11 +131,17 @@ function buildCartMesh() {
 // ---------------------------------------------
 
 // Called when the car ride to the store ends: you step out of the car in the parking lot.
-function openGroceryStore() {
+// opts.fromMall: you walked in from the mall's concourse (mall.js) — no parking lot, no car, and
+// leaving puts you back in the mall instead of driving home.
+function openGroceryStore(opts) {
     if (inStore || !scene || !playerMesh) return;
+    const fromMall = !!(opts && opts.fromMall);
     inStore = true;
     const snowy = isSnowing();
     const crowdCount = rollCrowdSize();
+    const chain = typeof currentStoreChain === 'function' ? currentStoreChain() : null;   // which supermarket chain today (street-styles.js)
+    const pal = (chain && chain.pal) || {};
+    const P = (k, d) => (pal[k] !== undefined ? pal[k] : d);
 
     // Put the house away (we bring it back when you leave)
     const stash = [];
@@ -148,7 +154,7 @@ function openGroceryStore() {
         bg: scene.background,
         pos: playerMesh.position.clone(), rot: playerMesh.rotation.clone(), scale: playerMesh.scale.clone()
     };
-    scene.background = new THREE.Color(snowy ? 0xcfdcea : 0x87ceeb);
+    scene.background = new THREE.Color(fromMall ? 0x2b2b3d : snowy ? 0xcfdcea : 0x87ceeb);
 
     const objects = [];     // everything we add (so leaveStore() can clean it up)
     function box(w, h, d, x, y, z, color, parent) {
@@ -163,24 +169,31 @@ function openGroceryStore() {
     function block(x1, x2, z1, z2) { rects.push({ x1, x2, z1, z2 }); }
 
     // --- Outside: grass (or snow), the parking lot, the sidewalk ---
-    box(90, 0.2, 70, 0, -0.25, 0, snowy ? 0xf2f7ff : 0x5DBB4A);
-    box(46, 0.2, 16, 0, -0.12, 13.5, 0x4a4a4f);
-    for (let i = -6; i <= 6; i++) box(0.12, 0.03, 4, i * 2.6, 0, 16.5, 0xffffff);
+    if (fromMall) {
+        box(90, 0.2, 70, 0, -0.25, 0, 0xD9CDB8);                       // the mall concourse just outside the shop
+        box(46, 0.2, 16, 0, -0.12, 13.5, 0xE8E0D0);
+    } else {
+        box(90, 0.2, 70, 0, -0.25, 0, snowy ? 0xf2f7ff : 0x5DBB4A);
+        box(46, 0.2, 16, 0, -0.12, 13.5, 0x4a4a4f);
+        for (let i = -6; i <= 6; i++) box(0.12, 0.03, 4, i * 2.6, 0, 16.5, 0xffffff);
+    }
     box(34, 0.22, 2.2, 0, -0.1, 6.6, 0xBDBDBD);
 
     // --- The store building: floor, tall back/side walls, a low front wall with a doorway ---
-    box(28, 0.2, 19.5, 0, -0.1, -4.25, 0xEDE7D6);
-    box(28.6, 5, 0.3, 0, 2.5, -14.1, 0xF0E6D2);
-    box(0.3, 5, 19.8, -14.1, 2.5, -4.2, 0xEADFC8);
-    box(0.3, 5, 19.8, 14.1, 2.5, -4.2, 0xEADFC8);
-    box(11.4, 1.3, 0.3, -8.3, 0.65, FRONT_Z, 0xD7CCC8);
-    box(11.4, 1.3, 0.3, 8.3, 0.65, FRONT_Z, 0xD7CCC8);
+    box(28, 0.2, 19.5, 0, -0.1, -4.25, P('floor', 0xEDE7D6));
+    box(28.6, 5, 0.3, 0, 2.5, -14.1, P('back', 0xF0E6D2));
+    box(0.3, 5, 19.8, -14.1, 2.5, -4.2, P('side', 0xEADFC8));
+    box(0.3, 5, 19.8, 14.1, 2.5, -4.2, P('side', 0xEADFC8));
+    [-10, -5, 0, 5, 10].forEach(x => box(0.6, 0.3, 0.25, x, 3.7, -13.9, 0xFFF59D));          // wall lamps (they glow)
+    [-12, -6, 0].forEach(z => { box(0.25, 0.3, 0.6, -13.9, 3.7, z, 0xFFF59D); box(0.25, 0.3, 0.6, 13.9, 3.7, z, 0xFFF59D); });
+    box(11.4, 1.3, 0.3, -8.3, 0.65, FRONT_Z, P('lowWall', 0xD7CCC8));
+    box(11.4, 1.3, 0.3, 8.3, 0.65, FRONT_Z, P('lowWall', 0xD7CCC8));
     block(-14, -2.6, FRONT_Z - 0.2, FRONT_Z + 0.2);
     block(2.6, 14, FRONT_Z - 0.2, FRONT_Z + 0.2);
-    box(0.3, 4.4, 0.3, -2.7, 2.2, FRONT_Z, 0x8D6E63);
-    box(0.3, 4.4, 0.3, 2.7, 2.2, FRONT_Z, 0x8D6E63);
-    box(5.7, 0.6, 0.3, 0, 4.4, FRONT_Z, 0xB03A2E);
-    put(makeFloorSign('GROCERY STORE', 9, 1.5, '#b03a2e'), 0, 0.03, 6.6);   // painted on the sidewalk (a floating sign would block your view)
+    box(0.3, 4.4, 0.3, -2.7, 2.2, FRONT_Z, P('post', 0x8D6E63));
+    box(0.3, 4.4, 0.3, 2.7, 2.2, FRONT_Z, P('post', 0x8D6E63));
+    box(5.7, 0.6, 0.3, 0, 4.4, FRONT_Z, P('beam', 0xB03A2E));
+    put(makeFloorSign(P('signText', 'GROCERY STORE'), 9, 1.5, P('sign', '#b03a2e')), 0, 0.03, 6.6);   // painted on the sidewalk (a floating sign would block your view)
 
     // --- Shelves: 3 rows x 4 sections, each section sells one kind of food ---
     const sections = [];
@@ -191,7 +204,7 @@ function openGroceryStore() {
             const itemIndex = (r * 4 + c) % GROCERY_ITEMS.length;
             const item = GROCERY_ITEMS[itemIndex];
             const sec = new THREE.Group();
-            box(3.4, 1.1, 1.1, 0, 0.55, 0, 0xA9B2C0, sec);                      // the shelf unit (low, so you can see over it)
+            box(3.4, 1.1, 1.1, 0, 0.55, 0, P('shelf', 0xA9B2C0), sec);                      // the shelf unit (low, so you can see over it)
             for (let i = 0; i < 5; i++) {                                         // products on both faces, two tiers
                 for (let tier = 0; tier < 2; tier++) {
                     products.push({ x: sx - 1.4 + i * 0.7, y: 0.3 + tier * 0.45, z: rowZ + 0.62, color: item.color });
@@ -221,6 +234,25 @@ function openGroceryStore() {
     scene.add(prodMesh);
     objects.push(prodMesh);
 
+    // a contrasting label stripe + a darker cap on every product, so the boxes read as real packaging
+    // (two more instanced batches sharing the same positions — still only 3 draw calls for all the products)
+    const labelMesh = new THREE.InstancedMesh(new THREE.BoxGeometry(0.505, 0.15, 0.206), new THREE.MeshLambertMaterial({ color: 0xffffff }), products.length);
+    const capMesh = new THREE.InstancedMesh(new THREE.BoxGeometry(0.34, 0.05, 0.15), new THREE.MeshLambertMaterial({ color: 0xffffff }), products.length);
+    const labelDummy = new THREE.Object3D(), capDummy = new THREE.Object3D();
+    products.forEach((p, i) => {
+        prodColor.setHex(p.color);
+        const lum = prodColor.r * 0.3 + prodColor.g * 0.59 + prodColor.b * 0.11;
+        labelDummy.position.set(p.x, p.y - 0.02, p.z);
+        labelDummy.updateMatrix();
+        labelMesh.setMatrixAt(i, labelDummy.matrix);
+        labelMesh.setColorAt(i, prodColor.setHex(lum > 0.6 ? 0x2C3E50 : 0xFFFFFF));
+        capDummy.position.set(p.x, p.y + 0.22, p.z);
+        capDummy.updateMatrix();
+        capMesh.setMatrixAt(i, capDummy.matrix);
+        capMesh.setColorAt(i, prodColor.setHex(p.color).multiplyScalar(0.7));
+    });
+    [labelMesh, capMesh].forEach(m => { m.frustumCulled = false; scene.add(m); objects.push(m); });
+
     // --- Checkout center: 4 lanes (2 on each side), each with a belt, register and cashier ---
     const lanes = LANE_XS.map((lx, i) => {
         box(0.9, 0.7, 3.2, lx, 0.35, 2.0, 0x8D6E63);                  // counter
@@ -242,8 +274,8 @@ function openGroceryStore() {
         }
         return { x: lx, queue, cashier, number: i + 1 };
     });
-    put(makeFloorSign('CHECKOUT', 4.2, 0.8, '#1f618d'), -11.3, 0.03, -8.6);   // painted at the end of each line
-    put(makeFloorSign('CHECKOUT', 4.2, 0.8, '#1f618d'), 11.3, 0.03, -8.6);
+    put(makeFloorSign('CHECKOUT', 4.2, 0.8, P('checkout', '#1f618d')), -11.3, 0.03, -8.6);   // painted at the end of each line
+    put(makeFloorSign('CHECKOUT', 4.2, 0.8, P('checkout', '#1f618d')), 11.3, 0.03, -8.6);
 
     // --- Carts waiting by the door ---
     const corral = [];
@@ -256,9 +288,12 @@ function openGroceryStore() {
     put(makeLabelSprite('🛒 CARTS', { w: 256, h: 96, size: 48, bg: '#27ae60', sw: 2.2, sh: 0.8 }), -4.2, 2.3, 3.5);
 
     // --- The car you came in, parked in the lot ---
-    const { car } = buildCarModel(snowy);
-    put(car, 5.2, 0, 12.8);
-    block(3.9, 6.5, 10.4, 15.2);
+    let car = null;
+    if (!fromMall) {
+        car = buildCarModel(snowy).car;
+        put(car, 5.2, 0, 12.8);
+        block(3.9, 6.5, 10.4, 15.2);
+    }
 
     // --- Mom, Dad and the crowd ---
     const moms = [
@@ -274,27 +309,42 @@ function openGroceryStore() {
     scene.add(crowd.legs, crowd.body, crowd.head);
     objects.push(crowd.legs, crowd.body, crowd.head);
 
-    let snow = null;
-    if (snowy) { snow = makeSnowPoints(500, 46, 16, 40); snow.position.set(0, 0, 4); scene.add(snow); objects.push(snow); }
+    // --- Realism: departments, price tags, signs, a guard, staff, sliding doors (store-realism.js) ---
+    const realism = typeof addStoreRealism === 'function' ? addStoreRealism({ box, put, block, sections, rects, objects, chain }) : null;
+    if (chain && typeof addStoreChainDecor === 'function') addStoreChainDecor(chain, { box, put, label: makeLabelSprite, objects });   // chain props (street-styles.js)
 
-    // --- You and your parents step out of the car ---
+    let snow = null;
+    if (snowy && !fromMall) { snow = makeSnowPoints(500, 46, 16, 40); snow.position.set(0, 0, 4); scene.add(snow); objects.push(snow); }
+
+    // --- You and your parents step out of the car (or, from the mall, walk in from the concourse) ---
     const py = player.age <= 4 ? 0.9 : 0;
     playerMesh.rotation.set(0, 0, 0);
-    playerMesh.position.set(5.7, 1.2, 13.4);
     scene.add(playerMesh);   // (the house was put away with you in it — bring just you back)
-    moms[0].group.position.set(5.2, 0.9, 12.4);
-    moms[1].group.position.set(5.2, 0.9, 12.4);
+    if (fromMall) {
+        playerMesh.position.set(3.0, py, 9.0);
+        moms[0].group.position.set(2.0, 0, 10.4);
+        moms[1].group.position.set(4.0, 0, 10.4);
+    } else {
+        playerMesh.position.set(5.7, 1.2, 13.4);
+        moms[0].group.position.set(5.2, 0.9, 12.4);
+        moms[1].group.position.set(5.2, 0.9, 12.4);
+    }
 
     store = {
-        stash, clickables, saved, objects, rects, sections, lanes, corral, moms, crowd, snow, car,
+        stash, clickables, saved, objects, rects, sections, lanes, corral, moms, crowd, snow, car, fromMall, realism,
         crowdCount, py, cart: null, cartDir: { x: 0, z: -1 }, dir: { x: 0, z: -1 }, trail: [],
-        intro: { t: 0, from: { x: 5.7, y: 1.2, z: 13.4 }, to: { x: 3.0, y: py, z: 13.0 } },
+        intro: fromMall ? null : { t: 0, from: { x: 5.7, y: 1.2, z: 13.4 }, to: { x: 3.0, y: py, z: 13.0 } },
         checkout: null, start: Date.now(), lastCrowdMsg: 0, lastEmptyMsg: 0, lastGrabAt: 0, lastFrame: Date.now()
     };
 
-    document.getElementById('location-name').textContent = '🛒 Grocery Store';
+    if (typeof isIndependent === 'function' && isIndependent()) {          // grown-ups shop alone
+        store.moms.forEach(p => scene.remove(p.group));
+        store.moms = [];
+    }
+    document.getElementById('location-name').textContent = `🛒 ${chain ? chain.name : 'Grocery Store'}`;
     updateActionPanel();
-    showEvent('🚗', 'You got out of the car! Walk into the store and grab a 🛒 cart by the door.');
+    showEvent(fromMall ? '🛒' : '🚗', fromMall ? `Welcome to ${chain ? chain.name : 'Utama Grocer'}! Walk into the store and grab a 🛒 cart by the door.` : 'You got out of the car! Walk into the store and grab a 🛒 cart by the door.');
+    maybeWitnessCrime('grocery', 7000);       // a shoplifter, a stolen purse... (crime.js)
     setTimeout(() => {
         if (store && store.crowdCount > 300) showEvent('👥', `Wow, ${store.crowdCount} shoppers today! It's ${crowdLabel(store.crowdCount)}`);
     }, 3000);
@@ -440,8 +490,8 @@ function updateStore() {
     if (!s) return;
     const now = Date.now();
     const pos = playerMesh.position;
-    const keyDx = (keys['ArrowRight'] || keys['d'] || keys['D'] ? 1 : 0) - (keys['ArrowLeft'] || keys['a'] || keys['A'] ? 1 : 0);
-    const keyDz = (keys['ArrowDown'] || keys['s'] || keys['S'] ? 1 : 0) - (keys['ArrowUp'] || keys['w'] || keys['W'] ? 1 : 0);
+    const mvIn = getMoveInput();
+    const keyDx = mvIn.x, keyDz = mvIn.z;
 
     // --- stepping out of the car (you can't move for a second) ---
     if (s.intro) {
@@ -531,6 +581,9 @@ function updateStore() {
 
     // --- snow falling in the parking lot ---
     if (s.snow) animateSnowPoints(s.snow, 0);
+
+    // --- staff walking the aisles, sliding doors, announcements (store-realism.js) ---
+    if (s.realism) s.realism.update(now);
 
     // --- the camera follows you around the store ---
     const camX = Math.max(-7, Math.min(7, pos.x * 0.7));
@@ -658,11 +711,14 @@ function updateCheckout(s, now) {
 function showReceipt() {
     const s = store;
     const c = s.checkout;
-    const items = s.cart.items;
+    // Pay for it and put the food in your fridge: parents pay while you're a kid, you pay from 18 (food.js)
+    const paid = typeof processGroceryCheckout === 'function' ? processGroceryCheckout(s.cart.items) : null;
+    const items = paid ? paid.items : s.cart.items;
+    if (paid) c.total = items.reduce((sum, it) => sum + it.price, 0);
     const counts = {};
     items.forEach(it => { counts[it.name] = counts[it.name] || { item: it, n: 0 }; counts[it.name].n++; });
     const lines = Object.values(counts).map(x => `<div>${x.item.emoji} ${x.item.name} ${x.n > 1 ? '× ' + x.n : ''} <span style="float:right">$${x.item.price * x.n}</span></div>`).join('');
-    const payer = Math.random() < 0.5 ? 'Mom' : 'Dad';
+    const payerText = paid ? paid.payerText : `👪 ${Math.random() < 0.5 ? 'Mom' : 'Dad'} paid with a card.`;
     const grades = gradeInfo();
 
     // A fun trip makes you happy; good grades earn a lollipop!
@@ -698,7 +754,8 @@ function showReceipt() {
                 <hr style="border:0; border-top:1px dashed #666; margin:8px 0;">
                 <b>Total <span style="float:right">$${c.total}</span></b>
             </div>
-            <p style="color:#aaa; margin-bottom:10px;">👪 ${payer} paid with a card.</p>
+            <p style="color:#aaa; margin-bottom:6px;">${payerText}</p>
+            <p style="color:#5dade2; font-size:0.9em; margin-bottom:10px;">🧊 Your groceries went in the fridge — they spoil, so eat them in time!</p>
             <p style="color:#FFD700; margin-bottom:10px;">🧑‍💼 Cashier: "${cashier}"</p>
             ${lollipop}
             <p style="color:#2ecc71; margin-bottom:12px;">Fun shopping trip! +${hap - (grades.good ? 8 : 0)} 😊</p>
@@ -732,6 +789,13 @@ function leaveStore(done) {
     s.stash.forEach(obj => scene.add(obj));
     clickableNPCs.length = 0;
     s.clickables.forEach(c => clickableNPCs.push(c));
+
+    if (s.fromMall) {                      // back out into the mall (mall.js keeps the day clock paused)
+        inStore = false;
+        if (!done) showEvent('🛒', 'You left without checking out — the groceries went back on the shelves.');
+        onMallGroceryDone(done);
+        return;
+    }
 
     lastDayTime += Date.now() - s.start;   // the day clock was paused while you shopped
     inStore = false;

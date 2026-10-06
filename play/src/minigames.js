@@ -92,7 +92,9 @@ function closeMiniGame() {
 // drives you there; the ride ends in the store's parking lot.
 // =============================================
 
+// The grocery store is inside Utama Mall now (mall.js): a parent drives you to the mall and you
+// walk to the grocery at the end of the concourse.
 function openShopping() {
-    if (driving || inStore) return;
-    if (!driveTo('to the store', '🛍️', openGroceryStore)) openGroceryStore();
+    if (driving || inStore || inRestaurant || inNeighborhood || inMall || inWork || inUni) return;
+    startMallErrand();
 }
